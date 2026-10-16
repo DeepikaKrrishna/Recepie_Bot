@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Recipe Bot suggests recipes from the ingredients you already have, with filters for cuisine, diet, time and budget.">
+  <meta name="color-scheme" content="light dark">
+  <title>Recipe Bot: cook with what you have</title>
+  <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script src="/static/js/theme.js"></script>
+  <script src="/static/js/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="wrap topbar__inner">
+      <a class="brand" href="/" aria-label="Recipe Bot home">
+        <span class="brand__mark" aria-hidden="true">RB</span>
+        <span class="brand__name">Recipe Bot</span>
+      </a>
+      <button type="button" class="btn btn--ghost btn--sm" id="themeToggle" aria-pressed="false">Dark mode</button>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <!-- ===== Search ===== -->
+    <section id="searchView" aria-labelledby="heroTitle">
+      <div class="hero">
+        <h1 id="heroTitle">Cook with what you already have.</h1>
+        <p class="hero__lede">Add your ingredients and set your diet, time and budget. Recipe Bot suggests dishes you can make now.</p>
+      </div>
+
+      <form id="searchForm" class="panel" novalidate>
+        <div class="field">
+          <label for="ingredientInput" class="field__label">Ingredients you have</label>
+          <div class="chip-input" id="ingredientBox" data-target="ingredients">
+            <ul class="chip-list" id="ingredientChips" aria-label="Selected ingredients"></ul>
+            <input id="ingredientInput" class="chip-input__field" type="text" list="ingredientSuggestions"
+                   autocomplete="off" maxlength="60" placeholder="e.g. rice, tomato, paneer" aria-describedby="ingredientHelp">
+            <button type="button" class="icon-btn" id="voiceBtn" hidden aria-label="Add ingredients by voice">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12h-2Z"/></svg>
+            </button>
+          </div>
+          <p id="ingredientHelp" class="field__help">Press Enter or comma to add each ingredient.</p>
+          <datalist id="ingredientSuggestions"></datalist>
+        </div>
+
+        <div class="field">
+          <label for="dishInput" class="field__label">Dish idea <span class="muted">(optional)</span></label>
+          <input id="dishInput" class="input" type="text" maxlength="120" placeholder="e.g. something like a dosa, or a quick lunch">
+        </div>
+
+        <details class="filters" id="filters">
+          <summary>Filters <span class="filters__count" id="filterCount" hidden></span></summary>
+          <div class="filters__grid">
+            <div class="field">
+              <label for="cuisineSelect" class="field__label">Cuisine</label>
+              <select id="cuisineSelect" class="input"><option value="Any">Any</option></select>
+            </div>
+            <div class="field">
+              <label for="timeSelect" class="field__label">Max total time</label>
+              <select id="timeSelect" class="input">
+                <option value="">No limit</option>
+                <option value="15">15 min</option>
+                <option value="30">30 min</option>
+                <option value="45">45 min</option>
+                <option value="60">1 hour</option>
+                <option value="90">1.5 hours</option>
+              </select>
+            </div>
+            <fieldset class="field">
+              <legend class="field__label">Difficulty</legend>
+              <div class="segmented" role="radiogroup">
+                <label><input type="radio" name="difficulty" value="" checked><span>Any</span></label>
+                <label><input type="radio" name="difficulty" value="easy"><span>Easy</span></label>
+                <label><input type="radio" name="difficulty" value="medium"><span>Medium</span></label>
+                <label><input type="radio" name="difficulty" value="hard"><span>Hard</span></label>
+              </div>
+            </fieldset>
+            <div class="field">
+              <label for="servingsInput" class="field__label">Servings</label>
+              <div class="stepper">
+                <button type="button" class="icon-btn" data-step="-1" aria-label="Fewer servings">&minus;</button>
+                <input id="servingsInput" class="input input--num" type="number" inputmode="numeric" min="1" max="20" value="2">
+                <button type="button" class="icon-btn" data-step="1" aria-label="More servings">+</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="budgetInput" class="field__label">Budget for the dish <span class="muted">(optional)</span></label>
+              <div class="input-group">
+                <select id="currencySelect" class="input input--currency" aria-label="Currency">
+                  <option>INR</option><option>USD</option><option>EUR</option><option>GBP</option><option>AUD</option><option>CAD</option><option>SGD</option><option>AED</option>
+                </select>
+                <input id="budgetInput" class="input" type="number" inputmode="decimal" min="1" step="1" placeholder="e.g. 200">
+              </div>
+            </div>
+            <fieldset class="field field--wide">
+              <legend class="field__label">Dietary preferences</legend>
+              <div class="toggle-chips" id="dietChips"></div>
+            </fieldset>
+            <div class="field field--wide">
+              <label for="excludeInput" class="field__label">Never include</label>
+              <div class="chip-input chip-input--warn" id="excludeBox" data-target="exclude">
+                <ul class="chip-list" id="excludeChips" aria-label="Excluded ingredients"></ul>
+                <input id="excludeInput" class="chip-input__field" type="text" autocomplete="off" maxlength="60" placeholder="e.g. peanuts, mushroom">
+              </div>
+              <p class="field__help">We drop any suggestion that includes these. AI can still make mistakes, so always check the recipe yourself.</p>
+            </div>
+          </div>
+        </details>
+
+        <p class="form-error" id="formError" role="alert" hidden></p>
+
+        <div class="actions">
+          <button type="submit" class="btn btn--primary" id="generateBtn">Find recipes</button>
+          <button type="button" class="btn btn--ghost" id="quickBtn">Quick matches</button>
+        </div>
+        <p class="notice" id="aiUnavailable" hidden>AI generation isn't configured on this server yet. Quick matches still work.</p>
+      </form>
+
+      <section class="results" aria-labelledby="resultsTitle" aria-busy="false" id="results" hidden>
+        <div class="results__head">
+          <h2 id="resultsTitle" tabindex="-1">Recipes</h2>
+          <p class="muted" id="resultsMeta"></p>
+        </div>
+        <div id="quickMatches" class="quick" hidden></div>
+        <div id="resultsBody" class="cards" aria-live="polite"></div>
+      </section>
+    </section>
+
+    <!-- ===== Recipe detail ===== -->
+    <article id="detailView" class="detail" hidden aria-labelledby="detailTitle"></article>
+
+    <!-- ===== Ask the Chef ===== -->
+    <section class="panel ask" aria-labelledby="askTitle" id="askSection">
+      <h2 id="askTitle">Ask the Chef</h2>
+      <form id="askForm" class="ask__form" novalidate>
+        <label for="askInput" class="sr-only">Your cooking question</label>
+        <input id="askInput" class="input" type="text" maxlength="500" placeholder="Can I use curd instead of cream in a curry?">
+        <button type="submit" class="btn btn--primary">Ask</button>
+      </form>
+      <div id="askAnswer" class="ask__answer" aria-live="polite" hidden></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <p><strong>Please read:</strong> recipes, cost and nutrition are AI-generated estimates and may be wrong. Always check ingredient labels for allergens, cook food to safe internal temperatures, and follow food-storage guidance. Recipe Bot does not give medical or dietary advice.</p>
+      <nav aria-label="Legal"><a href="/privacy">Privacy</a> · <a href="/terms">Terms of use</a></nav>
+    </div>
+  </footer>
+</body>
+</html>

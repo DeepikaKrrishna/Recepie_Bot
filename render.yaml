@@ -1,0 +1,40 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# Deploys only after GitHub checks (the CI workflow) pass on `main`.
+# Secrets are NOT stored here: set OPENROUTER_API_KEY in the Render dashboard
+# (sync: false makes Render prompt for it on first deploy).
+services:
+  - type: web
+    name: recipe-bot
+    runtime: python
+    branch: main
+    autoDeployTrigger: checksPass
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips "*"
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.0"
+      - key: APP_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "true"
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: google/gemma-3-4b-it:free
+      - key: OPENROUTER_FALLBACK_MODELS
+        sync: false
+      - key: APP_PUBLIC_URL
+        sync: false
+      - key: AI_RATE_LIMIT_PER_MINUTE
+        value: "8"
+      - key: DEFAULT_CURRENCY
+        value: INR
+# Stage 2 (accounts) will add a managed PostgreSQL database here:
+#
+# databases:
+#   - name: recipe-bot-db
+#     databaseName: recipebot
+#     user: recipebot
+# ...and a DATABASE_URL envVar with `fromDatabase`, plus a preDeployCommand
+# that runs `alembic upgrade head`.
