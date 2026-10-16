@@ -23,3 +23,6 @@ instance/
 Thumbs.db
 .vscode/
 .idea/
+e2e/node_modules/
+e2e/screenshots/
+e2e.sqlite3*

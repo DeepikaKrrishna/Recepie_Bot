@@ -1,7 +1,6 @@
 # Render Blueprint: https://render.com/docs/blueprint-spec
-# Deploys only after GitHub checks (the CI workflow) pass on `main`.
-# Secrets are NOT stored here: set OPENROUTER_API_KEY in the Render dashboard
-# (sync: false makes Render prompt for it on first deploy).
+# Deploys from `main` only after GitHub checks (the CI workflow) pass.
+# Secrets are NOT stored here: Render prompts for values marked `sync: false`.
 services:
   - type: web
     name: recipe-bot
@@ -9,7 +8,9 @@ services:
     branch: main
     autoDeployTrigger: checksPass
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips "*"
+    # Migrations run before the server starts; a failed migration stops the deploy
+    # and Render keeps serving the previous version.
+    startCommand: alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips "*"
     healthCheckPath: /healthz
     envVars:
       - key: PYTHON_VERSION
@@ -18,6 +19,10 @@ services:
         value: production
       - key: TRUST_PROXY
         value: "true"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: recipe-bot-db
+          property: connectionString
       - key: OPENROUTER_API_KEY
         sync: false
       - key: OPENROUTER_MODEL
@@ -30,11 +35,9 @@ services:
         value: "8"
       - key: DEFAULT_CURRENCY
         value: INR
-# Stage 2 (accounts) will add a managed PostgreSQL database here:
-#
-# databases:
-#   - name: recipe-bot-db
-#     databaseName: recipebot
-#     user: recipebot
-# ...and a DATABASE_URL envVar with `fromDatabase`, plus a preDeployCommand
-# that runs `alembic upgrade head`.
+
+databases:
+  - name: recipe-bot-db
+    databaseName: recipebot
+    user: recipebot
+    postgresMajorVersion: "16"

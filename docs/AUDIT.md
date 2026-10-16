@@ -138,3 +138,23 @@ Account deletion is one transaction: it deletes the user row (cascades everythin
 | P3 | Accessibility audit with axe + screen reader pass | Basics in place (labels, focus, contrast, reduced motion) |
 | P3 | Voice controls, image ingredient recognition | After core launch is stable |
 | — | License | **Not added.** Owner must choose (e.g. MIT) |
+
+---
+
+## 9. Status update (17 Oct 2026)
+
+Everything in §8 marked P1 and P2 is now implemented. See `docs/VERIFICATION.md` for evidence:
+
+- **Stage 2 (accounts & persistence):** SQLAlchemy 2 + Alembic, argon2id, hashed server-side sessions, CSRF + Origin checks, preferences, history with retention, export, account deletion.
+- **Smart Pantry & Food Waste Reducer:** expiry tracking, rescue-mode generation ranked by expiring items used, rescued-items counter.
+- **Meal Planner & shopping list:** weekly grid with move/swap, aisle-grouped list consolidated from the plan, skips pantry items, bought → pantry.
+- **Extras beyond the brief:**
+  - Cook Mode (voice, read-aloud, timers, wake lock)
+  - public share links
+  - pantry-coverage badges
+  - PWA / offline
+  - generative plate art
+  - occasion and spice filters
+  - axe-clean UI
+
+Still open: revoke the keys (P0, owner); a live-provider smoke test and first deploy (P0); Redis rate limiting; nutrition and price data sources; password reset email; image ingredient recognition; a larger local dataset; and a license.
