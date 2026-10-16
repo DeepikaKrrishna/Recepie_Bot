@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
@@ -54,6 +54,19 @@ CUISINES = [
     "American",
     "French",
     "Korean",
+]
+
+OCCASIONS = [
+    "quick weeknight",
+    "tiffin box",
+    "comfort food",
+    "rainy-day snack",
+    "party starter",
+    "festive",
+    "light & healthy",
+    "kid-friendly",
+    "date night",
+    "one-pot",
 ]
 
 DIETS = [
@@ -106,8 +119,21 @@ class GenerateRequest(StrictModel):
     currency: Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")] | None = None
     count: int = Field(default=3, ge=1, le=4)
     remix: RemixRequest | None = None
+    use_first: list[IngredientName] = Field(default_factory=list, max_length=15)
+    occasion: str | None = None
+    spice: Literal["mild", "medium", "hot"] | None = None
 
-    @field_validator("ingredients", "exclude")
+    @field_validator("occasion")
+    @classmethod
+    def _occasion(cls, value: str | None) -> str | None:
+        if value is None or not value.strip():
+            return None
+        match = next((o for o in OCCASIONS if o == value.strip().lower()), None)
+        if match is None:
+            raise ValueError("Unsupported occasion")
+        return match
+
+    @field_validator("ingredients", "exclude", "use_first")
     @classmethod
     def _clean_list(cls, items: list[str]) -> list[str]:
         seen: dict[str, str] = {}
@@ -137,7 +163,7 @@ class GenerateRequest(StrictModel):
         return validate_diets(values)
 
     def has_subject(self) -> bool:
-        return bool(self.ingredients or self.dish or self.remix)
+        return bool(self.ingredients or self.dish or self.remix or self.use_first)
 
 
 class SubstituteRequest(StrictModel):
@@ -228,9 +254,10 @@ class SubstituteBatch(BaseModel):
 
 
 class RecipeOut(Recipe):
-    total_minutes: int
-    possible_allergens: list[str] = Field(default_factory=list)
-    notices: list[str] = Field(default_factory=list)
+    total_minutes: int = Field(ge=0, le=4320)
+    possible_allergens: list[Annotated[str, StringConstraints(max_length=40)]] = Field(default_factory=list, max_length=20)
+    notices: list[Annotated[str, StringConstraints(max_length=300)]] = Field(default_factory=list, max_length=10)
+    uses_expiring: list[Annotated[str, StringConstraints(max_length=60)]] = Field(default_factory=list, max_length=15)
 
 
 class GenerateResponse(BaseModel):

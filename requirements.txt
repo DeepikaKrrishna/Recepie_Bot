@@ -1,5 +1,10 @@
-# Runtime dependencies (pinned; versions verified with the test suite on Python 3.13)
+# Runtime dependencies (pinned; verified with the test suite on Python 3.11 and 3.13,
+# SQLite and PostgreSQL 16)
 fastapi==0.143.2
 uvicorn==0.54.0
 httpx==0.28.1
 python-dotenv==1.2.4
+SQLAlchemy==2.1.4
+alembic==1.20.0
+argon2-cffi==25.1.0
+psycopg[binary]==3.3.6

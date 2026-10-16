@@ -161,7 +161,7 @@ def test_health_endpoints(client):
     assert client.get("/healthz").json() == {"status": "ok"}
     ready = client.get("/readyz").json()
     assert ready["status"] == "ready"
-    assert ready["checks"] == {"recipe_dataset": True, "llm_configured": True}
+    assert ready["checks"] == {"database": True, "recipe_dataset": True, "llm_configured": True}
     assert "key" not in str(ready).lower()
 
 

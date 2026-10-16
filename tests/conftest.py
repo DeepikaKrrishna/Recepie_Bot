@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import os
 
 import pytest
 from fastapi.testclient import TestClient
@@ -37,8 +38,33 @@ def _block_real_network(monkeypatch):
     monkeypatch.setattr(httpx.AsyncClient, "__init__", guarded)
 
 
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite://")
+
+
+def reset_database(url: str) -> None:
+    """Give each test a clean schema. In-memory SQLite is fresh per app already."""
+    if url.startswith("sqlite") and url in ("sqlite://", "sqlite:///:memory:"):
+        return
+    from sqlalchemy import text
+
+    from app.db import make_engine
+    from app.models import Base
+
+    engine = make_engine(url)
+    with engine.begin() as conn:
+        Base.metadata.drop_all(conn)
+        conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
+    engine.dispose()
+
+
 def make_settings(**overrides) -> Settings:
-    base = Settings(openrouter_api_key="test-key", ai_rate_limit_per_minute=100, openrouter_max_retries=2)
+    base = Settings(
+        openrouter_api_key="test-key",
+        ai_rate_limit_per_minute=100,
+        login_rate_limit_per_minute=100,
+        openrouter_max_retries=2,
+        database_url=TEST_DATABASE_URL,
+    )
     return dataclasses.replace(base, **overrides)
 
 
@@ -53,7 +79,9 @@ def make_client():
 
     def _make(fake: FakeOpenRouter | None = None, **overrides) -> TestClient:
         fake = fake or FakeOpenRouter()
-        app = create_app(make_settings(**overrides), llm_transport=fake.transport)
+        settings = make_settings(**overrides)
+        reset_database(settings.database_url)
+        app = create_app(settings, llm_transport=fake.transport, auto_migrate=True)
         client = TestClient(app, raise_server_exceptions=False)
         client.__enter__()
         clients.append(client)

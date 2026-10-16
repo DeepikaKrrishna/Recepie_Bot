@@ -53,12 +53,21 @@ class Settings:
     max_request_bytes: int = 16384
     default_currency: str = "INR"
 
+    database_url: str = field(default=f"sqlite:///{BASE_DIR / 'recipebot.sqlite3'}", repr=False)
+    session_days: int = 30
+    default_history_retention_days: int = 30
+    login_rate_limit_per_minute: int = 8
+
     recipes_csv: Path = BASE_DIR / "data" / "recipes.csv"
     static_dir: Path = BASE_DIR / "static"
 
     @property
     def is_production(self) -> bool:
         return self.app_env.lower() == "production"
+
+    @property
+    def cookie_secure(self) -> bool:
+        return self.is_production
 
     @property
     def llm_configured(self) -> bool:
@@ -87,6 +96,10 @@ def load_settings() -> Settings:
         ai_rate_limit_per_minute=_int(env.get("AI_RATE_LIMIT_PER_MINUTE"), 8, 1, 1000),
         max_request_bytes=_int(env.get("MAX_REQUEST_BYTES"), 16384, 1024, 1_048_576),
         default_currency=(env.get("DEFAULT_CURRENCY", "INR").strip().upper() or "INR")[:3],
+        database_url=env.get("DATABASE_URL", "").strip() or f"sqlite:///{BASE_DIR / 'recipebot.sqlite3'}",
+        session_days=_int(env.get("SESSION_DAYS"), 30, 1, 365),
+        default_history_retention_days=_int(env.get("HISTORY_RETENTION_DAYS"), 30, 0, 365),
+        login_rate_limit_per_minute=_int(env.get("LOGIN_RATE_LIMIT_PER_MINUTE"), 8, 1, 100),
     )
 
 

@@ -17,6 +17,7 @@ import re
 
 from pydantic import ValidationError
 
+from .kitchen import matches as kitchen_matches
 from .llm import LLMBadOutput, NoSuitableRecipes, OpenRouterClient, extract_json
 from .schemas import (
     AskResponse,
@@ -249,6 +250,11 @@ def detect_allergens(recipe: Recipe) -> list[str]:
     return sorted(found)
 
 
+def expiring_used(recipe: Recipe, use_first: list[str]) -> list[str]:
+    names = [i.name for i in recipe.ingredients]
+    return [item for item in use_first if any(kitchen_matches(item, n) for n in names)]
+
+
 def check_recipe(recipe: Recipe, req: GenerateRequest) -> tuple[bool, list[str], str | None]:
     """Return (keep, notices, drop_reason)."""
     ingredient_text = " | ".join(f"{i.name} {i.note or ''}" for i in recipe.ingredients)
@@ -333,6 +339,9 @@ def build_generate_messages(req: GenerateRequest, currency: str, feedback: str |
         "servings": req.servings,
         "budget": {"amount": req.budget, "currency": currency} if req.budget else None,
         "number_of_recipes": req.count,
+        "use_first_expiring_soon": req.use_first or None,
+        "occasion": req.occasion,
+        "spice_level": req.spice,
     }
     if req.remix:
         constraints["remix_of"] = {"recipe": req.remix.base_title, "change_requested": req.remix.instruction}
@@ -341,6 +350,11 @@ def build_generate_messages(req: GenerateRequest, currency: str, feedback: str |
         "you may assume common pantry staples (salt, oil, water, basic spices) but list them. "
         f"Give costs in {currency}."
     )
+    if req.use_first:
+        instructions += (
+            " Food-waste rescue: build each recipe around as many 'use_first_expiring_soon' items as sensibly "
+            "possible, because they expire soon."
+        )
     if req.remix:
         instructions = (
             f"Adapt the recipe '{req.remix.base_title}' as requested in remix_of. Return {req.count} variation(s). "
@@ -405,10 +419,13 @@ async def generate_recipes(client: OpenRouterClient, req: GenerateRequest, defau
                     total_minutes=recipe.prep_minutes + recipe.cook_minutes,
                     possible_allergens=detect_allergens(recipe),
                     notices=notices,
+                    uses_expiring=expiring_used(recipe, req.use_first),
                 )
             )
         dropped_total += len(reasons)
         if kept:
+            # Rescue mode: recipes that use more soon-to-expire items come first.
+            kept.sort(key=lambda r: len(r.uses_expiring), reverse=True)
             return GenerateResponse(
                 recipes=kept[: req.count], dropped=dropped_total, model=completion.model, disclaimer=DISCLAIMER
             )
