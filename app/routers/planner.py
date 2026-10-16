@@ -199,7 +199,11 @@ def merge_into_list(db: Session, uid: int, rows: list[tuple[str, float | None, s
     added = 0
     for line in consolidate(rows):
         match = next(
-            (s for s in existing if normalize_name(s.name) == normalize_name(line.name) and normalize_unit(s.unit) == line.unit),
+            (
+                s
+                for s in existing
+                if normalize_name(s.name) == normalize_name(line.name) and normalize_unit(s.unit) == normalize_unit(line.unit)
+            ),
             None,
         )
         if match is not None:

@@ -170,15 +170,23 @@ def test_frontend_and_legal_pages_served(client):
     assert client.head("/").status_code == 200
     assert "Privacy notice" in client.get("/privacy").text
     assert "Terms of use" in client.get("/terms").text
-    assert client.get("/static/js/app.js").status_code == 200
+    assert client.get("/static/js/main.js").status_code == 200
+    assert client.get("/sw.js").headers["service-worker-allowed"] == "/"
+    assert client.get("/manifest.webmanifest").json()["name"] == "Recipe Bot"
 
 
-def test_frontend_never_uses_innerhtml_with_data():
+def test_frontend_never_parses_html_strings():
+    """All UI text is rendered via DOM APIs, so AI or user text can't inject markup."""
     from pathlib import Path
 
-    js = (Path(__file__).resolve().parent.parent / "static" / "js" / "app.js").read_text()
-    assert "innerHTML" not in js
-    assert "openrouter" not in js.lower()
+    js_dir = Path(__file__).resolve().parent.parent / "static" / "js"
+    files = list(js_dir.rglob("*.js"))
+    assert len(files) > 10
+    for f in files:
+        code = f.read_text()
+        for banned in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval(", "new Function"):
+            assert banned not in code, f"{banned} found in {f.name}"
+        assert "openrouter" not in code.lower(), f"provider reference in {f.name}"
 
 
 def test_settings_repr_hides_key():

@@ -213,7 +213,7 @@ def test_shopping_list_from_plan_scales_merges_and_skips_pantry(cook):
     cook.post("/api/pantry", json={"name": "oil"})
     res = cook.post("/api/shopping/from-plan", json={"start": start.isoformat()}).json()
     items = {i["name"].lower(): i for i in res["items"]}
-    assert items["cooked rice"]["quantity"] == 6.0 and items["cooked rice"]["unit"] == "cup"  # (4/2*2) + 2
+    assert items["cooked rice"]["quantity"] == 6.0 and items["cooked rice"]["unit"] == "cups"  # (4/2*2) + 2
     assert items["lemon"]["quantity"] == 3.0
     assert "salt" not in items and "oil" not in items
     assert set(res["skipped_in_pantry"]) == {"salt", "oil"}
@@ -303,3 +303,9 @@ def test_spa_routes_serve_shell(client, path):
 def test_unknown_api_route_is_json_404(client):
     res = client.get("/api/nope")
     assert res.status_code == 404 and res.json()["detail"] == "Not found."
+
+
+def test_consolidate_keeps_written_unit_but_merges_plurals():
+    lines = consolidate([("curry leaves", 10, "leaves", "A"), ("curry leaf", 20, "leaf", "B"), ("garlic", 3, "cloves", "A")])
+    curry = next(x for x in lines if x.name == "curry leaves")
+    assert (curry.quantity, curry.unit) == (30, "leaves")

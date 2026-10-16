@@ -44,6 +44,7 @@ def summary(r: SavedRecipe) -> dict:
         "difficulty": d.get("difficulty"),
         "total_minutes": d.get("total_minutes"),
         "servings": d.get("servings"),
+        "ingredients": d.get("ingredients", []),
         "favorite": r.favorite,
         "cooked_count": r.cooked_count,
         "shared": r.share_id is not None,

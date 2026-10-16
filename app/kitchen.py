@@ -344,16 +344,18 @@ def consolidate(items: Iterable[tuple[str, float | None, str | None, str]]) -> l
         key = (normalize_name(name) or name.lower(), u)
         line = merged.get(key)
         if line is None:
-            merged[key] = Line(name=name.strip(), quantity=qty, unit=u, sources=[source] if source else [])
+            # Display the unit as written ("leaves"), but merge on the normalised form ("leaf").
+            shown = u if u in ("g", "ml", "kg", "l") else (unit or "").strip().lower()
+            merged[key] = Line(name=name.strip(), quantity=qty, unit=shown, sources=[source] if source else [])
         else:
             line.quantity = None if (line.quantity is None or qty is None) else line.quantity + qty
             if source and source not in line.sources:
                 line.sources.append(source)
     for line in merged.values():
         if line.quantity is not None:
-            if line.unit == "g" and line.quantity >= 1000:
+            if normalize_unit(line.unit) == "g" and line.quantity >= 1000:
                 line.quantity, line.unit = line.quantity / 1000, "kg"
-            elif line.unit == "ml" and line.quantity >= 1000:
+            elif normalize_unit(line.unit) == "ml" and line.quantity >= 1000:
                 line.quantity, line.unit = line.quantity / 1000, "l"
             line.quantity = round(line.quantity, 2)
     return list(merged.values())

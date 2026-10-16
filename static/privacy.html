@@ -5,6 +5,7 @@
   <title>Privacy notice · Recipe Bot</title>
   <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/css/app.css">
+  <link rel="stylesheet" href="/static/css/views.css">
   <script src="/static/js/theme.js"></script>
 </head>
 <body>
@@ -15,14 +16,27 @@
 
   <h2>What we process</h2>
   <ul>
-    <li><strong>What you type</strong> (ingredients, filters, dish ideas, questions) is sent to our server and passed on to an AI model provider (OpenRouter and the model it routes to) to generate a response.</li>
-    <li><strong>Technical data:</strong> your IP address is held in memory for up to one minute for rate limiting. Server logs record the time, path, status code and response time of each request. Logs do <em>not</em> record what you typed.</li>
-    <li><strong>On your device:</strong> your light/dark theme choice is saved in your browser's local storage.</li>
+    <li><strong>What you type</strong> (ingredients, filters, dish ideas, questions) is sent to our server and passed to an AI model provider (OpenRouter and the model it routes to) to generate a response.</li>
+    <li><strong>If you create an account:</strong> your email address, optional display name, a salted argon2id hash of your password (never the password itself), your preferences, saved recipes and notes, pantry items and expiry dates, meal plan, shopping list, and simple counts (meals cooked, items rescued).</li>
+    <li><strong>Search history:</strong> if you're signed in, your recent searches are kept for the period you choose in Account settings (default 30 days, or off), then deleted automatically.</li>
+    <li><strong>Sessions:</strong> a session cookie keeps you signed in. It is HttpOnly and is the only cookie we set. We store only a hash of it.</li>
+    <li><strong>Technical data:</strong> your IP address is held in memory for up to one minute for rate limiting. Server logs record the time, path, status code and response time of each request. They do <em>not</em> record what you typed.</li>
+    <li><strong>On your device:</strong> your light/dark theme choice is saved in your browser. If you install the app, recently opened saved recipes are cached on your device for offline use and cleared when you sign out.</li>
+  </ul>
+
+  <h2>Shared recipes</h2>
+  <p>If you choose to share a recipe, anyone with the link can see that recipe, but not your notes, email or other data. You can stop sharing at any time.</p>
+
+  <h2>Your controls</h2>
+  <ul>
+    <li>Download everything we store about you from Account → Download my data.</li>
+    <li>Clear your search history or turn it off.</li>
+    <li>Delete your account, which permanently removes all of your data.</li>
   </ul>
 
   <h2>What we don't do</h2>
   <ul>
-    <li>No accounts, advertising trackers or analytics in this version.</li>
+    <li>No advertising trackers or third-party analytics.</li>
     <li>We don't sell your data.</li>
   </ul>
 
