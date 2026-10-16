@@ -23,9 +23,9 @@ app.add_middleware(
 )
 
 # Initialize ML recommender
-recommender = RecipeRecommender("recipes.csv")
+recommender = RecipeRecommender(os.path.join(os.path.dirname(__file__), "data", "recipes.csv"))
 
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
 
 class GenerateRequest(BaseModel):
     title: str
