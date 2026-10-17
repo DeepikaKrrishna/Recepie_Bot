@@ -1,0 +1,28 @@
+# Secrets — never commit real values. Use .env.example as the template.
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local databases / runtime data
+*.sqlite3
+*.db
+instance/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+e2e/node_modules/
+e2e/screenshots/
+e2e.sqlite3*

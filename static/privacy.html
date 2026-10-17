@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy notice · Recipe Bot</title>
+  <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css">
+  <link rel="stylesheet" href="/static/css/views.css">
+  <script src="/static/js/theme.js"></script>
+</head>
+<body>
+<main class="wrap legal">
+  <p><a href="/">← Back to Recipe Bot</a></p>
+  <h1>Privacy notice</h1>
+  <p class="muted">Draft. Review it with the project owner (and legal advice if needed) before a public launch,.</p>
+
+  <h2>What we process</h2>
+  <ul>
+    <li><strong>What you type</strong> (ingredients, filters, dish ideas) is sent to our server and passed to an AI model provider (Groq by default) to generate recipes.</li>
+    <li><strong>Your account:</strong> your email address, display name, a salted argon2id hash of your password (never the password itself), your saved recipes and notes, and simple counts (meals cooked, best mini-game score). We don't keep a history of your searches.</li>
+    <li><strong>Sessions:</strong> a session cookie keeps you signed in. It is HttpOnly and is the only cookie we set. We store only a hash of it.</li>
+    <li><strong>Technical data:</strong> your IP address is held in memory for up to one minute for rate limiting. Server logs record the time, path, status code and response time of each request. They do <em>not</em> record what you typed.</li>
+    <li><strong>On your device:</strong> your light/dark theme choice and your best mini-game score are saved in your browser. If you install the app, recently opened saved recipes are cached on your device for offline use and cleared when you sign out.</li>
+  </ul>
+
+  <h2>Your controls</h2>
+  <ul>
+    <li>Download everything we store about you from Account → Download my data.</li>
+    <li>Delete your account, which permanently removes all of your data.</li>
+  </ul>
+
+  <h2>What we don't do</h2>
+  <ul>
+    <li>No advertising trackers or third-party analytics.</li>
+    <li>We don't sell your data.</li>
+  </ul>
+
+  <h2>Third parties</h2>
+  <p>Recipe requests are processed by the configured AI provider (Groq by default) under its own terms and privacy policy. Don't enter personal, medical or confidential information.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about privacy: contact the project maintainers through the project's GitHub repository.</p>
+</main>
+</body>
+</html>

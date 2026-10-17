@@ -1,0 +1,25 @@
+[project]
+name = "recipe-bot"
+version = "0.2.0"
+description = "AI cooking assistant: recipes from the ingredients you have."
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "ASYNC"]
+ignore = [
+  "S101",  # assert is fine in tests
+  "S311",  # random used for retry jitter, not crypto
+  "B008",  # FastAPI Depends()/Query() in defaults is idiomatic
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S105", "S106"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning:starlette.*", "ignore:Using `httpx` with `starlette.testclient`"]
