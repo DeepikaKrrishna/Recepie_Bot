@@ -1,17 +1,13 @@
-// App state + tiny pub/sub. Server data stays authoritative; this is a session cache.
+// App state + tiny pub/sub. The server is authoritative; this is a session cache.
 import { api, setCsrf } from "./api.js";
 
 const listeners = new Set();
 
 export const state = {
-  user: null,          // { email, display_name, stats }
-  prefs: null,         // saved preferences when signed in
-  options: null,       // /api/options
-  results: null,       // { request, data } from the last generation
-  draft: { ingredients: [], exclude: [], dish: "", mood: null, diets: null, cuisine: null, time: "", difficulty: "", servings: null, budget: "", spice: "" },
-  pantry: null,        // cached pantry list (signed in)
-  shoppingCount: 0,
-  online: navigator.onLine,
+  user: null,     // { email, display_name, stats }
+  options: null,  // /api/options
+  results: null,  // { request, data, promise }
+  draft: { ingredients: [], exclude: [], dish: "", mood: null, diets: [], cuisine: "Any", time: "", difficulty: "", servings: 2, spice: "" },
 };
 
 export function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
@@ -19,9 +15,8 @@ export function emit(what) { for (const fn of listeners) fn(what); }
 
 export function setSession(me) {
   state.user = me?.user || null;
-  state.prefs = me?.preferences || null;
   setCsrf(me?.csrf_token || null);
-  if (!state.user) { state.pantry = null; state.shoppingCount = 0; }
+  if (!state.user) state.results = null;
   emit("session");
 }
 
@@ -35,28 +30,18 @@ export async function loadOptions() {
   return state.options;
 }
 
-export async function loadPantry(force = false) {
-  if (!state.user) return null;
-  if (state.pantry && !force) return state.pantry;
-  try { state.pantry = await api(`/api/pantry?today=${localToday()}`); } catch { state.pantry = null; }
-  emit("pantry");
-  return state.pantry;
+export function bestScore() {
+  let local = 0;
+  try { local = Number(localStorage.getItem("rb-best") || 0); } catch { /* storage blocked */ }
+  return Math.max(local, state.user?.stats?.best_game_score || 0);
 }
 
-export async function loadShoppingCount() {
-  if (!state.user) return;
-  try {
-    const items = await api("/api/shopping");
-    state.shoppingCount = items.filter((i) => !i.checked).length;
-    emit("shopping");
-  } catch { /* badge is optional */ }
-}
-
-export function pantryNames() {
-  return (state.pantry?.items || []).map((i) => i.name);
-}
-
-export function localToday() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+export function saveBest(score) {
+  try { if (score > Number(localStorage.getItem("rb-best") || 0)) localStorage.setItem("rb-best", String(score)); } catch { /* ignore */ }
+  if (state.user && score > (state.user.stats?.best_game_score || 0)) {
+    state.user.stats.best_game_score = score;
+    api("/api/account/game-score", { method: "POST", body: { score } }).catch(() => {});
+    return true;
+  }
+  return false;
 }

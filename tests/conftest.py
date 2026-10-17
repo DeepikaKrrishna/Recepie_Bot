@@ -52,8 +52,13 @@ def reset_database(url: str) -> None:
 
     engine = make_engine(url)
     with engine.begin() as conn:
-        Base.metadata.drop_all(conn)
-        conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
+        if engine.dialect.name == "postgresql":
+            # Also clears tables left behind by older schema versions.
+            conn.execute(text("DROP SCHEMA public CASCADE"))
+            conn.execute(text("CREATE SCHEMA public"))
+        else:
+            Base.metadata.drop_all(conn)
+            conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
     engine.dispose()
 
 

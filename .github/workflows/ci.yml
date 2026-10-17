@@ -37,7 +37,8 @@ jobs:
           ruff format --check .
       - name: Tests (AI provider mocked, network blocked)
         env:
-          OPENROUTER_API_KEY: ""
+          GROQ_API_KEY: ""
+          AI_API_KEY: ""
         run: pytest
       - name: Dependency vulnerability audit
         run: pip-audit -r requirements.txt

@@ -12,25 +12,20 @@
 <main class="wrap legal">
   <p><a href="/">← Back to Recipe Bot</a></p>
   <h1>Privacy notice</h1>
-  <p class="muted">Draft. Review it with the project owner (and legal advice if needed) before a public launch, and update it when accounts are added.</p>
+  <p class="muted">Draft. Review it with the project owner (and legal advice if needed) before a public launch,.</p>
 
   <h2>What we process</h2>
   <ul>
-    <li><strong>What you type</strong> (ingredients, filters, dish ideas, questions) is sent to our server and passed to an AI model provider (OpenRouter and the model it routes to) to generate a response.</li>
-    <li><strong>If you create an account:</strong> your email address, optional display name, a salted argon2id hash of your password (never the password itself), your preferences, saved recipes and notes, pantry items and expiry dates, meal plan, shopping list, and simple counts (meals cooked, items rescued).</li>
-    <li><strong>Search history:</strong> if you're signed in, your recent searches are kept for the period you choose in Account settings (default 30 days, or off), then deleted automatically.</li>
+    <li><strong>What you type</strong> (ingredients, filters, dish ideas) is sent to our server and passed to an AI model provider (Groq by default) to generate recipes.</li>
+    <li><strong>Your account:</strong> your email address, display name, a salted argon2id hash of your password (never the password itself), your saved recipes and notes, and simple counts (meals cooked, best mini-game score). We don't keep a history of your searches.</li>
     <li><strong>Sessions:</strong> a session cookie keeps you signed in. It is HttpOnly and is the only cookie we set. We store only a hash of it.</li>
     <li><strong>Technical data:</strong> your IP address is held in memory for up to one minute for rate limiting. Server logs record the time, path, status code and response time of each request. They do <em>not</em> record what you typed.</li>
-    <li><strong>On your device:</strong> your light/dark theme choice is saved in your browser. If you install the app, recently opened saved recipes are cached on your device for offline use and cleared when you sign out.</li>
+    <li><strong>On your device:</strong> your light/dark theme choice and your best mini-game score are saved in your browser. If you install the app, recently opened saved recipes are cached on your device for offline use and cleared when you sign out.</li>
   </ul>
-
-  <h2>Shared recipes</h2>
-  <p>If you choose to share a recipe, anyone with the link can see that recipe, but not your notes, email or other data. You can stop sharing at any time.</p>
 
   <h2>Your controls</h2>
   <ul>
     <li>Download everything we store about you from Account → Download my data.</li>
-    <li>Clear your search history or turn it off.</li>
     <li>Delete your account, which permanently removes all of your data.</li>
   </ul>
 
@@ -41,7 +36,7 @@
   </ul>
 
   <h2>Third parties</h2>
-  <p>Requests are processed by OpenRouter and the selected AI model provider under their own terms and privacy policies. Some free models may use prompts to improve their services. Don't enter personal, medical or confidential information.</p>
+  <p>Recipe requests are processed by the configured AI provider (Groq by default) under its own terms and privacy policy. Don't enter personal, medical or confidential information.</p>
 
   <h2>Contact</h2>
   <p>Questions about privacy: contact the project maintainers through the project's GitHub repository.</p>

@@ -1,59 +1,39 @@
-// Shared UI pieces: mascot, cooking loader, toasts, dialogs, empty states,
-// chip inputs, confetti and view transitions.
+// Shared UI pieces: mascot, toasts, dialogs, empty states, chip inputs, confetti, view transitions.
 import { $, clear, h, reducedMotion, ripple, s } from "./dom.js";
 import { emojiFor } from "./food.js";
 import { icon } from "./icons.js";
 
+const INK = "#1f1a2e";
+
 // ---------------------------------------------------------------- mascot
-/** "Pot-bot": the Recipe Bot mascot. */
-export function mascot({ size = 120, flames = false, falling = false, cls = "" } = {}) {
-  return s("svg", { viewBox: "0 0 150 130", width: size, height: size * 130 / 150, class: `mascot ${cls}`, "aria-hidden": "true" },
-    s("path", { class: "steam", d: "M58 34c-6-6 6-10 0-18" }),
-    s("path", { class: "steam", d: "M75 30c-6-6 6-10 0-18" }),
-    s("path", { class: "steam", d: "M92 34c-6-6 6-10 0-18" }),
-    falling ? ["🧅", "🍅", "🌿"].map((e, i) => s("text", { class: "float-ing", x: 50 + i * 25, y: 40, style: { "animation-delay": `${i * 0.8}s` } }, e)) : null,
-    s("g", { class: "pot-lid" },
-      s("rect", { x: 66, y: 34, width: 18, height: 8, rx: 4 }),
-      s("path", { d: "M30 54c0-9 20-14 45-14s45 5 45 14Z" })),
-    s("rect", { class: "pot-body", x: 26, y: 54, width: 98, height: 58, rx: 22 }),
-    s("rect", { class: "pot-body", x: 14, y: 62, width: 18, height: 10, rx: 5 }),
-    s("rect", { class: "pot-body", x: 118, y: 62, width: 18, height: 10, rx: 5 }),
-    s("ellipse", { class: "pot-eye", cx: 60, cy: 80, rx: 6, ry: 8 }),
-    s("ellipse", { class: "pot-eye", cx: 90, cy: 80, rx: 6, ry: 8 }),
-    s("circle", { cx: 50, cy: 94, r: 5, fill: "#ff8a6a", opacity: ".55" }),
-    s("circle", { cx: 100, cy: 94, r: 5, fill: "#ff8a6a", opacity: ".55" }),
-    s("path", { d: "M66 96c5 5 13 5 18 0", fill: "none", stroke: "var(--paper)", "stroke-width": 3, "stroke-linecap": "round" }),
-    flames ? s("g", null,
-      s("path", { class: "pot-flame", d: "M55 128c-6-4-4-10 0-14 0 4 3 5 4 6 1-3 0-6 2-8 4 4 6 12-6 16Z" }),
-      s("path", { class: "pot-flame", d: "M73 128c-6-4-4-10 0-14 0 4 3 5 4 6 1-3 0-6 2-8 4 4 6 12-6 16Z" }),
-      s("path", { class: "pot-flame", d: "M91 128c-6-4-4-10 0-14 0 4 3 5 4 6 1-3 0-6 2-8 4 4 6 12-6 16Z" })) : null);
+/** Pot-bot: the Recipe Bot mascot (same character as in Chef Run). */
+export function mascot({ size = 160, cls = "" } = {}) {
+  return s("svg", { viewBox: "0 0 160 150", width: size, height: size * 150 / 160, class: `mascot ${cls}`, "aria-hidden": "true" },
+    s("g", { class: "mascot__steam", fill: "none", stroke: "#9b90b0", "stroke-width": 4, "stroke-linecap": "round" },
+      s("path", { d: "M62 30c-7-7 7-12 0-20" }), s("path", { d: "M80 26c-7-7 7-12 0-20" }), s("path", { d: "M98 30c-7-7 7-12 0-20" })),
+    s("g", { class: "mascot__lid" },
+      s("path", { d: "M28 58c0-12 24-18 52-18s52 6 52 18Z", fill: "#ff7a3d", stroke: INK, "stroke-width": 4, "stroke-linejoin": "round" }),
+      s("rect", { x: 70, y: 32, width: 20, height: 10, rx: 5, fill: "#ffc93c", stroke: INK, "stroke-width": 4 })),
+    s("rect", { x: 14, y: 70, width: 20, height: 12, rx: 6, fill: INK }),
+    s("rect", { x: 126, y: 70, width: 20, height: 12, rx: 6, fill: INK }),
+    s("rect", { x: 26, y: 58, width: 108, height: 72, rx: 26, fill: "#fffdf8", stroke: INK, "stroke-width": 4 }),
+    s("ellipse", { class: "mascot__eye", cx: 64, cy: 88, rx: 6, ry: 8, fill: INK }),
+    s("ellipse", { class: "mascot__eye", cx: 96, cy: 88, rx: 6, ry: 8, fill: INK }),
+    s("circle", { cx: 50, cy: 102, r: 6, fill: "#ff5a7e", opacity: ".5" }),
+    s("circle", { cx: 110, cy: 102, r: 6, fill: "#ff5a7e", opacity: ".5" }),
+    s("path", { d: "M70 104c5 6 15 6 20 0", fill: "none", stroke: INK, "stroke-width": 4, "stroke-linecap": "round" }),
+    s("rect", { x: 48, y: 128, width: 10, height: 14, rx: 4, fill: INK }),
+    s("rect", { x: 102, y: 128, width: 10, height: 14, rx: 4, fill: INK }));
 }
 
 export function logo() {
   return s("svg", { viewBox: "0 0 48 48", class: "brand__logo", "aria-hidden": "true" },
-    s("rect", { x: 2, y: 2, width: 44, height: 44, rx: 14, fill: "var(--tomato)" }),
-    s("path", { d: "M12 22c0-3 5-5 12-5s12 2 12 5Z", fill: "var(--turmeric)" }),
-    s("rect", { x: 21, y: 13, width: 6, height: 4, rx: 2, fill: "var(--turmeric)" }),
-    s("rect", { x: 11, y: 22, width: 26, height: 16, rx: 7, fill: "#fff8ee" }),
-    s("circle", { cx: 19.5, cy: 29, r: 2, fill: "#2a1a12" }),
-    s("circle", { cx: 28.5, cy: 29, r: 2, fill: "#2a1a12" }),
-    s("path", { d: "M21.5 33c1.5 1.4 3.5 1.4 5 0", fill: "none", stroke: "#2a1a12", "stroke-width": 1.6, "stroke-linecap": "round" }));
-}
-
-// ---------------------------------------------------------------- cooking loader
-const STATUSES = ["Chopping onions…", "Tempering mustard seeds…", "Checking your filters…", "Tasting for salt…",
-  "Plating up…", "Toasting the spices…", "Simmering ideas…", "Reading the spice box…"];
-
-export function cookingLoader(text = "Cooking up ideas") {
-  const status = h("p", { class: "cooking__status", "aria-live": "polite" }, h("span", { text: `${text}…` }));
-  let i = 0;
-  const node = h("div", { class: "cooking", role: "status" }, mascot({ size: 150, flames: true, falling: true }), status,
-    h("p", { class: "muted tiny", text: "Free AI models can take up to 30 seconds." }));
-  const timer = setInterval(() => {
-    if (!node.isConnected) { clearInterval(timer); return; }
-    clear(status).append(h("span", { text: STATUSES[i++ % STATUSES.length] }));
-  }, 2200);
-  return node;
+    s("rect", { x: 2, y: 2, width: 44, height: 44, rx: 15, fill: "#ffc93c", stroke: INK, "stroke-width": 3 }),
+    s("path", { d: "M11 22c0-4 6-6 13-6s13 2 13 6Z", fill: "#ff7a3d", stroke: INK, "stroke-width": 2.5, "stroke-linejoin": "round" }),
+    s("rect", { x: 10, y: 21, width: 28, height: 18, rx: 8, fill: "#fffdf8", stroke: INK, "stroke-width": 2.5 }),
+    s("circle", { cx: 19.5, cy: 29, r: 2.2, fill: INK }),
+    s("circle", { cx: 28.5, cy: 29, r: 2.2, fill: INK }),
+    s("path", { d: "M21.5 33c1.5 1.4 3.5 1.4 5 0", fill: "none", stroke: INK, "stroke-width": 2, "stroke-linecap": "round" }));
 }
 
 // ---------------------------------------------------------------- toasts
@@ -74,17 +54,16 @@ export function toast(message, { icon: emoji = "✨", action, timeout = 4200 } =
 }
 
 export function errorToast(err) {
-  toast(err?.message || "Something went wrong.", { icon: "⚠️", timeout: 6000 });
+  toast(err?.message || "Something went wrong.", { icon: "😬", timeout: 6000 });
 }
 
 // ---------------------------------------------------------------- dialogs
-export function modal(title, body, { onClose, wide = false } = {}) {
+export function modal(title, body, { onClose } = {}) {
   const dlg = h("dialog", { class: "modal", "aria-labelledby": "modalTitle" },
     h("div", { class: "modal__head" },
       h("h2", { id: "modalTitle", text: title }),
       h("button", { class: "icon-btn icon-btn--plain", type: "button", "aria-label": "Close", onClick: () => dlg.close() }, icon("x"))),
     h("div", { class: "modal__body" }, body));
-  if (wide) dlg.style.setProperty("width", "min(760px, calc(100% - 24px))");
   dlg.addEventListener("close", () => { dlg.remove(); onClose?.(); });
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
   document.body.append(dlg);
@@ -131,17 +110,7 @@ export function emptyState({ art = "🍽️", title, text, actions = [], error =
     actions.length ? h("div", { class: "row", style: { "justify-content": "center" } }, actions) : null);
 }
 
-export function signInGate(feature, emojis, blurb) {
-  return h("section", { class: "gate view" },
-    h("div", { class: "gate__art", "aria-hidden": "true" }, emojis.map((e, i) => h("span", { style: { "--i": String(i) }, text: e }))),
-    h("h1", { text: feature }),
-    h("p", { class: "muted", text: blurb }),
-    h("div", { class: "row", style: { "justify-content": "center" } },
-      h("a", { class: "btn btn--primary", href: "/signup", "data-link": "" }, "Create a free account"),
-      h("a", { class: "btn btn--ghost", href: "/login", "data-link": "" }, "Sign in")));
-}
-
-/** Chip input bound to an array. Returns { el, add, set }. */
+/** Chip input bound to an array. Returns { el, input, add, render }. */
 export function chipInput({ id, items, max = 30, placeholder, variant = "", label, onChange, suggestions = [] }) {
   const list = h("ul", { class: "chip-list", "aria-label": label });
   const input = h("input", { id, type: "text", autocomplete: "off", maxlength: "60", placeholder, list: suggestions.length ? `${id}-dl` : null, enterKeyHint: "done" });
@@ -174,7 +143,7 @@ export function chipInput({ id, items, max = 30, placeholder, variant = "", labe
   }
   input.addEventListener("keydown", (e) => {
     if ((e.key === "Enter" || e.key === ",") && input.value.trim()) { e.preventDefault(); add(input.value); input.value = ""; }
-    else if (e.key === "," ) e.preventDefault();
+    else if (e.key === ",") e.preventDefault();
     else if (e.key === "Backspace" && !input.value && items.length) { items.pop(); render(); onChange?.(); }
   });
   // A pick from the suggestions list arrives as a change event.
@@ -192,8 +161,8 @@ export function withTransition(update) {
   return t.finished.catch(() => {});
 }
 
-// ---------------------------------------------------------------- confetti (spice burst)
-export function confetti() {
+// ---------------------------------------------------------------- confetti
+export function confetti({ y = 0.55 } = {}) {
   if (reducedMotion()) return;
   const canvas = h("canvas", { class: "confetti", "aria-hidden": "true" });
   document.body.append(canvas);
@@ -201,22 +170,22 @@ export function confetti() {
   const dpr = window.devicePixelRatio || 1;
   canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
   ctx.scale(dpr, dpr);
-  const colors = ["#f0a20f", "#c63f1d", "#2b7a4b", "#ffc145", "#ff7d55", "#8e3b62"];
-  const glyphs = ["🌶️", "🍋", "🌿", "🧄", "🍅"];
-  const parts = Array.from({ length: 140 }, (_, i) => ({
-    x: innerWidth / 2, y: innerHeight * 0.55, vx: (Math.random() - 0.5) * 16, vy: -Math.random() * 18 - 6,
-    r: Math.random() * 6 + 3, c: colors[i % colors.length], rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.3,
-    g: i % 12 === 0 ? glyphs[i % glyphs.length] : null,
+  const colors = ["#ff7a3d", "#ffc93c", "#3ed1b2", "#ff5a7e", "#9b7bff", "#5ab8ff"];
+  const glyphs = ["🍅", "🌶️", "🍋", "🧅", "🥕", "🌿"];
+  const parts = Array.from({ length: 150 }, (_, i) => ({
+    x: innerWidth / 2, y: innerHeight * y, vx: (Math.random() - 0.5) * 18, vy: -Math.random() * 19 - 6,
+    r: Math.random() * 6 + 4, c: colors[i % colors.length], rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.3,
+    g: i % 10 === 0 ? glyphs[i % glyphs.length] : null,
   }));
   const start = performance.now();
   (function frame(now) {
     const t = now - start;
     ctx.clearRect(0, 0, innerWidth, innerHeight);
     for (const p of parts) {
-      p.vy += 0.42; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+      p.vy += 0.45; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
       ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = Math.max(0, 1 - t / 2600);
-      if (p.g) { ctx.font = "22px serif"; ctx.fillText(p.g, -11, 8); }
-      else { ctx.fillStyle = p.c; ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); }
+      if (p.g) { ctx.font = "24px serif"; ctx.fillText(p.g, -12, 8); }
+      else { ctx.fillStyle = p.c; ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); ctx.strokeRect(-p.r, -p.r / 2, p.r * 2, p.r); }
       ctx.restore();
     }
     if (t < 2600) requestAnimationFrame(frame); else canvas.remove();

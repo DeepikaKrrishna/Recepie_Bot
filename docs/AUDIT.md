@@ -4,6 +4,8 @@
 
 Secret values are never reproduced in this document.
 
+> **Update (18 Oct 2026, `launch-redesign`):** the AI provider is now **Groq** (`GROQ_API_KEY`, checked with `scripts/check_ai.py`). The pantry, rescue, planner, shopping, sharing and history features described below were **removed** to focus the app on cook → Chef Run → recipe → Cook Mode → cookbook, behind a sign-in gate (migration `0002`). §7 (revoke the old OpenRouter keys) still applies. See `docs/VERIFICATION.md` for current results.
+
 ---
 
 ## 1. Existing functionality (baseline)

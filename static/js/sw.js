@@ -1,17 +1,17 @@
 // Service worker: makes Recipe Bot installable and keeps the app shell and
 // recently opened saved recipes available offline (handy with patchy kitchen Wi-Fi).
 // Private API responses are cached only for saved recipes and cleared on sign-out.
-const VERSION = "rb-v3";
+const VERSION = "rb-v4";
 const SHELL = `${VERSION}-shell`;
 const API = `${VERSION}-api`;
 const ASSETS = [
   "/", "/static/css/app.css", "/static/css/views.css", "/static/js/main.js", "/static/js/theme.js",
   "/static/js/lib/dom.js", "/static/js/lib/icons.js", "/static/js/lib/api.js", "/static/js/lib/store.js",
-  "/static/js/lib/ui.js", "/static/js/lib/food.js", "/static/js/lib/format.js", "/static/js/lib/timers.js", "/static/js/lib/cards.js",
-  "/static/js/views/discover.js", "/static/js/views/results.js", "/static/js/views/recipe.js", "/static/js/views/cookmode.js",
-  "/static/js/views/cookbook.js", "/static/js/views/pantry.js", "/static/js/views/planner.js", "/static/js/views/shopping.js",
-  "/static/js/views/account.js", "/static/js/views/auth.js",
-  "/static/fonts/fraunces-latin-wght.woff2", "/static/fonts/outfit-latin-wght.woff2", "/static/img/favicon.svg",
+  "/static/js/lib/ui.js", "/static/js/lib/food.js", "/static/js/lib/format.js", "/static/js/lib/timers.js",
+  "/static/js/lib/cards.js", "/static/js/lib/chefrun.js",
+  "/static/js/views/welcome.js", "/static/js/views/discover.js", "/static/js/views/results.js", "/static/js/views/recipe.js",
+  "/static/js/views/cookmode.js", "/static/js/views/cookbook.js", "/static/js/views/account.js",
+  "/static/fonts/fredoka-latin-wght.woff2", "/static/fonts/outfit-latin-wght.woff2", "/static/img/favicon.svg",
 ];
 
 self.addEventListener("install", (event) => {

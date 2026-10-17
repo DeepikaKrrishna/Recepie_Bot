@@ -1,59 +1,48 @@
 # Verification report
 
-*17 Oct 2026 · branch `production-hardening` · app version 0.2.0*
+*18 Oct 2026 · branch `launch-redesign` · Groq + Chef Run redesign*
 
 ## Summary
 
 | Check | Result |
 |---|---|
-| Backend tests, SQLite | **164 passed** (Python 3.13.16; the Stage 1 suite was also verified on 3.11.17, and CI runs both) |
-| Backend tests, PostgreSQL 16 | **164 passed** (also wired into CI's `postgres` job) |
-| Migrations | `alembic upgrade head`, `check`, `downgrade base`, `upgrade head` all clean on SQLite and PostgreSQL 16 |
+| Backend tests, SQLite | **138 passed** (Python 3.13.16; CI also runs 3.11) |
+| Backend tests, PostgreSQL 16 | **138 passed** |
+| Migrations | `0001 → 0002` upgrade, `alembic check`, downgrade and re-upgrade are clean on SQLite and PostgreSQL 16 |
 | Lint / format | `ruff check` and `ruff format --check` clean |
 | Dependency audit | `pip-audit -r requirements.txt`: no known vulnerabilities |
-| Browser journeys | Desktop (dark and light) and mobile (light and dark), 20+ steps each: **pass, 0 console errors** |
-| Accessibility | axe-core 4.14, WCAG 2.1 A/AA + best practice, 11 pages × 2 themes: **0 violations** |
-| Secrets in tree | None (test guard + `git grep`) |
-| Secrets in history | **Still present** in commit `25c65d6`. Revocation is required (AUDIT §7) |
-| Live OpenRouter | **Not run.** No valid key, and the provider is unreachable from the build sandbox |
-| Deployment | **Not deployed.** `render.yaml` (web + Postgres) and `Procfile` are prepared; there is no demo URL |
+| Browser journeys | Desktop and mobile, each in light and dark mode. Steps: gate → sign up → generate → Chef Run → recipe → scale → swaps → save/favourite → Cook Mode → cookbook → stats → sign out. **All pass, 0 console errors** |
+| Accessibility | axe-core 4.14, WCAG 2.1 A/AA + best practice, 10 screens × 2 themes (incl. the game): **0 violations** |
+| Secrets in tree | None (test guard; `.env` is git-ignored) |
+| Secrets in history | Old OpenRouter keys **still present** in commit `25c65d6`, so they must be revoked (AUDIT §7) |
+| Live Groq API | **Not run.** The build sandbox cannot reach api.groq.com. AI paths are verified with a mocked provider only |
+| Deployment | **Not deployed.** `render.yaml` (web + Postgres, deploys only after checks pass) is ready; there is no demo URL |
 
-**Production-ready? Not yet.** Code, persistence, security controls and tests are in place. Remaining gates:
-1. Revoke the leaked keys.
-2. Run a live-provider smoke test.
-3. Deploy, then check `/readyz` and run the e2e suite against the deployed URL.
-4. Confirm database backups are on.
+**Launch gates remaining:**
+1. Revoke the leaked OpenRouter keys.
+2. Add `GROQ_API_KEY`, run `python scripts/check_ai.py`, and generate a few recipes by hand to judge quality.
+3. Deploy, then check `/readyz`.
+4. Turn on database backups.
 
 ## Feature checklist
 
-| Phase | Feature | Implemented | Verified by |
-|---|---|---|---|
-| 1 | Audit, secrets removed from tree | ✅ | `docs/AUDIT.md`, key guard test |
-| 2 | Landing, chips + suggestions, filters, cards with art, detail pages, skeletons, empty/error states, keyboard nav, dark mode | ✅ | e2e journeys, axe |
-| 2 | Favorites, cookbook, pantry dashboard, weekly planner, auth screens | ✅ | e2e journeys |
-| 3 | Structured generation with server validation, multi-recipe, servings scaling, substitutions, remix/variations | ✅ | `test_generation.py`, `test_resilience.py`, e2e |
-| 3 | Exclusions, diet, cuisine, time, difficulty, budget, occasion, spice | ✅ | `test_generation.py`, `test_kitchen.py` |
-| 3 | Timeouts, bounded retries, rate limits, model fallback, malformed output | ✅ | `test_resilience.py` |
-| 4 | Signup/login/logout, argon2id, secure sessions, CSRF, authorization | ✅ | `test_accounts.py` |
-| 4 | Users, saved recipes, favorites, pantry + expiry, preferences, meal plans, shopping lists, history with retention | ✅ | `test_accounts.py`, `test_kitchen.py`, `test_migrations.py` |
-| 4 | SQLite dev / PostgreSQL prod, migrations, transactions | ✅ | PostgreSQL run, migration checks |
-| 4 | Account deletion + data cleanup, data export | ✅ | `test_account_deletion_removes_everything`, `test_export_contains_only_own_data` |
-| 5.1 | Smart Pantry | ✅ | `test_pantry_*`, e2e |
-| 5.2 | Food Waste Reducer (rescue mode + rescued counter) | ✅ | `test_rescue_mode_*`, `test_consume_counts_rescued_items`, e2e |
-| 5.3 | Indian Cuisine Mode (regional cuisines, Jain/eggetarian, tiffin, INR) | ✅ | options + validation tests |
-| 5.4 | Budget Chef (budget filter, per-serving estimate, labelled) | ✅ (AI estimates only) | `test_time_and_budget_notices` |
-| 5.5 | Recipe Remix | ✅ | `test_remix_request_is_forwarded`, UI |
-| 5.6 | Meal Planner + consolidated shopping list | ✅ | `test_plan_*`, `test_shopping_*`, e2e |
-| 5.7 | Nutrition estimates | ⚠️ AI estimates, labelled unverified; no nutrition database | — |
-| 5.8 | Voice controls | ✅ (progressive enhancement) | Manual code path; not automatable in headless Chromium |
-| 5.8 | Image ingredient recognition | ❌ deferred | — |
-| 6 | Validation, SQLi (ORM only), XSS, CSRF, authz, request limits, rate limits, logs, health, privacy, terms, food-safety notices | ✅ | `test_security.py`, `test_accounts.py` |
-| 7 | Tests, CI, deploy config, migrations on deploy, deploy only after checks pass | ✅ | `.github/workflows/ci.yml`, `render.yaml` |
-| 8 | README with architecture, setup, env, migrations, tests, deploy, security, limitations | ✅ | `README.md` |
+| Feature | Verified by |
+|---|---|
+| Sign-in gate (all app routes → `/welcome?next=…`, return after sign-in) | e2e journey |
+| Groq provider (OpenAI-compatible), JSON mode, retries, model fallback, timeouts | `test_resilience.py`, `test_generation.py` |
+| Quality prompt (real dishes, built around the user's ingredients, ≤3 extras, distinct ideas, cues in steps) | `test_generation.py` prompt assertions |
+| Coverage ranking ("uses N of yours", "+N to buy") | `test_generation.py`, e2e |
+| Diet / exclusion filtering, allergen notices | `test_generation.py` |
+| AI endpoints signed-in only; rate limited | `test_generation.py` (sign-in), `test_security.py` (429) |
+| Chef Run mini-game, ready button, best score saved | e2e journey, `test_accounts.py` (game-score) |
+| Cook Mode (steps, keyboard, timers, finish → cooked count) | e2e journey |
+| Cookbook (save, favourite, notes, cooked, delete, 500 cap) | `test_cookbook.py`, e2e |
+| Account (profile, password change revokes sessions, export, delete) | `test_accounts.py`, e2e |
+| Demo mode banner (canned recipes are flagged as such) | e2e screenshots |
 
 ## Not verified here
 
-- Live AI quality and latency with real OpenRouter models.
-- Speech recognition, read-aloud and wake lock on real phones. These are feature-detected and hidden when unsupported.
-- Service-worker offline behaviour across browsers. It's registered and caches the shell, but offline was not exercised end to end.
-- Load and performance under concurrent users.
+- Live recipe quality and latency with real Groq models.
+- Speech recognition, read-aloud and wake lock on real phones (feature-detected; hidden when unsupported).
+- Offline behaviour of the service worker across browsers.
+- Load under many concurrent users. Groq free-tier limits will apply first.

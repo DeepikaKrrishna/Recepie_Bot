@@ -23,18 +23,16 @@ services:
         fromDatabase:
           name: recipe-bot-db
           property: connectionString
-      - key: OPENROUTER_API_KEY
+      - key: GROQ_API_KEY
         sync: false
-      - key: OPENROUTER_MODEL
-        value: google/gemma-3-4b-it:free
-      - key: OPENROUTER_FALLBACK_MODELS
-        sync: false
+      - key: AI_MODEL
+        value: llama-3.3-70b-versatile
+      - key: AI_FALLBACK_MODELS
+        value: llama-3.1-8b-instant
       - key: APP_PUBLIC_URL
         sync: false
       - key: AI_RATE_LIMIT_PER_MINUTE
         value: "8"
-      - key: DEFAULT_CURRENCY
-        value: INR
 
 databases:
   - name: recipe-bot-db

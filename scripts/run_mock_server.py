@@ -11,9 +11,11 @@ picked to overlap with the ingredients you enter.
 
 from __future__ import annotations
 
+import asyncio
 import dataclasses
 import json
 import os
+import random
 import re
 import sys
 from pathlib import Path
@@ -211,13 +213,14 @@ def score(recipe, wanted):
     return sum(1 for w in wanted if w and w.lower().rstrip("s") in names)
 
 
-def demo_handler(request: httpx.Request) -> httpx.Response:
+async def demo_handler(request: httpx.Request) -> httpx.Response:
     body = json.loads(request.content or b"{}")
     msgs = body.get("messages", [])
     system = msgs[0].get("content", "") if msgs else ""
     user = msgs[-1].get("content", "") if msgs else ""
     if '"recipes"' not in system:
         return FakeOpenRouter.smart_default(request)
+    await asyncio.sleep(random.uniform(3, 5))  # feel like a real model, so the mini game shows
     try:
         constraints = json.loads(user.split("Constraints (JSON):\n", 1)[1].split("\n\nYour previous", 1)[0])
     except (IndexError, ValueError):
