@@ -31,12 +31,26 @@ def main() -> int:
             res = httpx.post(
                 f"{s.ai_base_url}/chat/completions",
                 headers={"Authorization": f"Bearer {s.ai_api_key}"},
-                json={"model": model, "messages": [{"role": "user", "content": "Reply with OK"}], "max_tokens": 5},
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": "Reply with OK"}],
+                    "max_tokens": 200,
+                    **({"reasoning_effort": "low"} if "gpt-oss" in model else {}),
+                },
                 timeout=30,
             )
             print(f"  {model}: HTTP {res.status_code}" + ("  ✓" if res.status_code == 200 else ""))
+            if res.status_code != 200:
+                try:
+                    detail = res.json().get("error", {}).get("message", "")
+                except ValueError:
+                    detail = res.text[:200]
+                if detail:
+                    print(f"    {detail}")
             if res.status_code in (401, 403):
                 print("    The key was rejected: check it, or create a new one.")
+            if res.status_code == 404:
+                print("    This model isn't available to your key. Set AI_MODEL in .env to a current model.")
             ok = ok or res.status_code == 200
         except httpx.HTTPError as exc:
             print(f"  {model}: {type(exc).__name__}")
