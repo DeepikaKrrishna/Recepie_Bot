@@ -26,9 +26,9 @@ services:
       - key: GROQ_API_KEY
         sync: false
       - key: AI_MODEL
-        value: llama-3.3-70b-versatile
+        value: openai/gpt-oss-120b
       - key: AI_FALLBACK_MODELS
-        value: llama-3.1-8b-instant
+        value: openai/gpt-oss-20b
       - key: APP_PUBLIC_URL
         sync: false
       - key: AI_RATE_LIMIT_PER_MINUTE

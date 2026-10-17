@@ -58,12 +58,13 @@ def test_groq_is_the_default_provider(make_client):
     from app.config import Settings
 
     s = Settings()
-    assert s.ai_base_url == "https://api.groq.com/openai/v1" and s.ai_model == "llama-3.3-70b-versatile"
+    assert s.ai_base_url == "https://api.groq.com/openai/v1" and s.ai_model == "openai/gpt-oss-120b"
     fake = FakeOpenRouter()
     client = make_client(fake)
     client.post("/api/recipes/generate", json=GOOD_REQUEST)
     assert fake.requests[0]["url"] == "https://api.groq.com/openai/v1/chat/completions"
     assert fake.requests[0]["body"]["response_format"] == {"type": "json_object"}
+    assert fake.requests[0]["body"]["reasoning_effort"] == "low"  # gpt-oss: keep thinking short
 
 
 def test_provider_settings_from_env(monkeypatch):
@@ -76,9 +77,13 @@ def test_provider_settings_from_env(monkeypatch):
     assert s.ai_provider == "gemini" and s.ai_api_key == "g-key" and "generativelanguage" in s.ai_base_url
     monkeypatch.delenv("GEMINI_API_KEY")
     monkeypatch.setenv("GROQ_API_KEY", "gq-key")
-    monkeypatch.setenv("AI_MODEL", "llama-3.1-8b-instant")
+    monkeypatch.setenv("AI_MODEL", "openai/gpt-oss-20b")
     s = load_settings()
-    assert (s.ai_provider, s.ai_api_key, s.ai_model) == ("groq", "gq-key", "llama-3.1-8b-instant")
+    assert (s.ai_provider, s.ai_api_key, s.ai_model) == ("groq", "gq-key", "openai/gpt-oss-20b")
+    monkeypatch.delenv("AI_MODEL")
+    monkeypatch.delenv("AI_FALLBACK_MODELS", raising=False)
+    s = load_settings()
+    assert s.models == ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]  # current Groq models, with a fallback
 
 
 def test_model_is_configurable(make_client):

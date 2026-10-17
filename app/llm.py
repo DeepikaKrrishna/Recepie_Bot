@@ -127,6 +127,9 @@ class ChatClient:
             }
             if json_mode:
                 payload["response_format"] = {"type": "json_object"}
+            if "gpt-oss" in model:
+                # Reasoning models: keep thinking short so recipes come back fast.
+                payload["reasoning_effort"] = "low"
             try:
                 return await self._post_with_retries(model, payload, headers)
             except (LLMUnavailable, LLMTimeout) as exc:

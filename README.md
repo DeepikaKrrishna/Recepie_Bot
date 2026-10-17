@@ -1,6 +1,6 @@
 # Recipe Bot 🍲
 
-**Turn your fridge into a feast.** Type the ingredients you have and Recipe Bot's AI sous-chef (Groq, Llama 3.3 70B) gives you real, tasty recipes built around them. While it thinks, you play **Chef Run**, a tiny runner game. Then you can cook hands-free step by step and keep the winners in your cookbook.
+**Turn your fridge into a feast.** Type the ingredients you have and Recipe Bot's AI sous-chef (Groq, gpt-oss-120b) gives you real, tasty recipes built around them. While it thinks, you play **Chef Run**, a tiny runner game. Then you can cook hands-free step by step and keep the winners in your cookbook.
 
 > **Status:** launch candidate. 138 backend tests pass on SQLite and PostgreSQL 16. Browser journeys pass on mobile and desktop in light and dark mode with no console errors, and axe-core finds 0 accessibility violations on 20 screens. **Not yet deployed**, and **the live Groq API has not been called from the build environment**, so do the first real-key smoke test yourself (see [Known limitations](#known-limitations)).
 
@@ -48,10 +48,12 @@ In Notepad, set `GROQ_API_KEY=gsk_...` and save. Then:
 
 ```bat
 .venv\Scripts\python scripts\check_ai.py
-.venv\Scripts\python -m uvicorn main:app --reload
+.venv\Scripts\python -m uvicorn main:app --reload --port 8080
 ```
 
-The first command is optional: it confirms the key works and never prints it.
+Then open http://127.0.0.1:8080. If you see `WinError 10013`, that port is blocked or already in use on your PC, so try another one (`--port 5050`).
+
+`check_ai.py` confirms the key works (it never prints the key) and shows the provider's error message if it doesn't. `HTTP 404` means the model isn't available to your key: set `AI_MODEL` in `.env`.
 
 macOS / Linux:
 
@@ -63,7 +65,7 @@ python scripts/check_ai.py
 uvicorn main:app --reload
 ```
 
-Open http://127.0.0.1:8000. Locally the app uses a SQLite file and applies migrations on startup.
+On macOS/Linux, open http://127.0.0.1:8000. Locally the app uses a SQLite file and applies migrations on startup.
 
 **No key yet?** `python scripts/run_mock_server.py` runs the whole app with a small set of canned sample recipes. A banner says you're in demo mode, and the same few recipes repeat. That's expected; real variety needs a key.
 
@@ -75,7 +77,7 @@ All are documented in [`.env.example`](.env.example). Never commit a real `.env`
 |---|---|---|
 | `GROQ_API_KEY` | — | **Secret**, server-side only. Without it, recipe generation shows a "not configured" message |
 | `AI_PROVIDER` | `groq` | `groq`, `gemini` or `openrouter`. Setting `GEMINI_API_KEY` or `OPENROUTER_API_KEY` instead also works |
-| `AI_MODEL` / `AI_FALLBACK_MODELS` | `llama-3.3-70b-versatile` / — | Primary model and comma-separated fallbacks (e.g. `llama-3.1-8b-instant`) |
+| `AI_MODEL` / `AI_FALLBACK_MODELS` | `openai/gpt-oss-120b` / — | Primary model and comma-separated fallbacks (e.g. `openai/gpt-oss-20b`) |
 | `AI_TIMEOUT_SECONDS` / `AI_MAX_RETRIES` | `45` / `2` | Provider timeout and bounded retries |
 | `DATABASE_URL` | local SQLite file | PostgreSQL in production (`postgres://` and `postgresql://` both work) |
 | `APP_ENV` | `development` | `production` enables secure `__Host-` cookies and HSTS, hides `/docs`, and turns off auto-migrate |

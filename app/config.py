@@ -16,11 +16,14 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Groq retired the Llama 3.x models on 16 Aug 2026; gpt-oss is its recommended replacement.
 PROVIDERS = {
-    "groq": ("https://api.groq.com/openai/v1", "llama-3.3-70b-versatile"),
+    "groq": ("https://api.groq.com/openai/v1", "openai/gpt-oss-120b"),
     "gemini": ("https://generativelanguage.googleapis.com/v1beta/openai", "gemini-2.5-flash"),
     "openrouter": ("https://openrouter.ai/api/v1", "meta-llama/llama-3.3-70b-instruct:free"),
 }
+# Tried automatically when the primary model is unavailable and AI_FALLBACK_MODELS is unset.
+DEFAULT_FALLBACKS = {"groq": ["openai/gpt-oss-20b"]}
 
 
 def _csv(value: str | None) -> list[str]:
@@ -103,7 +106,7 @@ def load_settings() -> Settings:
         ai_api_key=key,
         ai_base_url=(env.get("AI_BASE_URL", "").strip() or base_url).rstrip("/"),
         ai_model=env.get("AI_MODEL", "").strip() or model,
-        ai_fallback_models=_csv(env.get("AI_FALLBACK_MODELS")),
+        ai_fallback_models=_csv(env.get("AI_FALLBACK_MODELS")) or DEFAULT_FALLBACKS.get(provider, []),
         ai_timeout_seconds=_int(env.get("AI_TIMEOUT_SECONDS"), 45, 5, 120),
         ai_max_retries=_int(env.get("AI_MAX_RETRIES"), 2, 0, 4),
         app_public_url=env.get("APP_PUBLIC_URL", "http://localhost:8000"),

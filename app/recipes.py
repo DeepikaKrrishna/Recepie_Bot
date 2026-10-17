@@ -428,7 +428,7 @@ async def generate_recipes(client: ChatClient, req: GenerateRequest) -> Generate
 
     for _attempt in range(MAX_GENERATION_ATTEMPTS):
         completion = await client.complete(
-            build_generate_messages(req, feedback), json_mode=True, max_tokens=3500, temperature=0.7
+            build_generate_messages(req, feedback), json_mode=True, max_tokens=6000, temperature=0.7
         )
         try:
             batch = parse_recipe_batch(completion.content)
@@ -484,7 +484,7 @@ async def suggest_substitutes(client: ChatClient, req: SubstituteRequest) -> Sub
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
     ]
     for _ in range(MAX_GENERATION_ATTEMPTS):
-        completion = await client.complete(messages, json_mode=True, max_tokens=700)
+        completion = await client.complete(messages, json_mode=True, max_tokens=1500)
         try:
             data = extract_json(completion.content)
             batch = SubstituteBatch.model_validate(data if isinstance(data, dict) else {"substitutes": data})
