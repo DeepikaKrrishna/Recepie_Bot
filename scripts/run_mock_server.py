@@ -1,4 +1,7 @@
-"""Run the full app locally against a FAKE AI provider (no API key, no network).
+"""DEMO MODE: run the app locally against a FAKE AI provider (no API key, no network).
+
+The app shows a "Demo mode" banner. For real recipes, set GROQ_API_KEY in .env and run
+`uvicorn main:app` instead.
 
 Useful for UI work and demos. Every recipe it returns is canned sample data,
 picked to overlap with the ingredients you enter.
@@ -240,7 +243,9 @@ def demo_handler(request: httpx.Request) -> httpx.Response:
     return httpx.Response(200, json=completion(json.dumps({"recipes": picks}), model="demo/fake-model"))
 
 
-settings = dataclasses.replace(load_settings(), openrouter_api_key="fake-key-for-local-mock", ai_rate_limit_per_minute=60)
+settings = dataclasses.replace(
+    load_settings(), ai_api_key="fake-key-for-local-mock", ai_provider="demo", ai_rate_limit_per_minute=60
+)
 app = create_app(settings, llm_transport=httpx.MockTransport(demo_handler))
 
 if __name__ == "__main__":

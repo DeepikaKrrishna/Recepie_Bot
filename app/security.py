@@ -15,7 +15,7 @@ import time
 import uuid
 from collections import deque
 
-from fastapi import HTTPException, Request
+from fastapi import Request
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from .config import Settings
@@ -253,16 +253,3 @@ class RateLimiter:
     def reset(self) -> None:
         with self._lock:
             self._hits.clear()
-
-
-def rate_limit_dependency(limiter: RateLimiter, settings: Settings, bucket: str):
-    async def _check(request: Request) -> None:
-        allowed, retry_after = limiter.hit(f"{bucket}:{client_ip(request, settings.trust_proxy)}")
-        if not allowed:
-            raise HTTPException(
-                status_code=429,
-                detail="Too many requests. Please wait a moment and try again.",
-                headers={"Retry-After": str(retry_after)},
-            )
-
-    return _check

@@ -20,7 +20,7 @@ def _no_sleep(monkeypatch):
     async def instant(*_args, **_kwargs):
         return None
 
-    monkeypatch.setattr(llm_module.OpenRouterClient, "_backoff", staticmethod(instant))
+    monkeypatch.setattr(llm_module.ChatClient, "_backoff", staticmethod(instant))
 
 
 @pytest.fixture(autouse=True)
@@ -59,10 +59,10 @@ def reset_database(url: str) -> None:
 
 def make_settings(**overrides) -> Settings:
     base = Settings(
-        openrouter_api_key="test-key",
+        ai_api_key="test-key",
         ai_rate_limit_per_minute=100,
         login_rate_limit_per_minute=100,
-        openrouter_max_retries=2,
+        ai_max_retries=2,
         database_url=TEST_DATABASE_URL,
     )
     return dataclasses.replace(base, **overrides)
@@ -77,7 +77,8 @@ def fake():
 def make_client():
     clients = []
 
-    def _make(fake: FakeOpenRouter | None = None, **overrides) -> TestClient:
+    def _make(fake: FakeOpenRouter | None = None, signed_in: bool = True, **overrides) -> TestClient:
+        """A test client. By default it is signed in, since AI endpoints need an account."""
         fake = fake or FakeOpenRouter()
         settings = make_settings(**overrides)
         reset_database(settings.database_url)
@@ -85,6 +86,10 @@ def make_client():
         client = TestClient(app, raise_server_exceptions=False)
         client.__enter__()
         clients.append(client)
+        if signed_in:
+            res = client.post("/api/auth/signup", json={"email": "chef@example.com", "password": "correct-horse-battery"})
+            assert res.status_code == 201, res.text
+            client.headers["X-CSRF-Token"] = res.json()["csrf_token"]
         return client
 
     yield _make
@@ -94,4 +99,11 @@ def make_client():
 
 @pytest.fixture
 def client(make_client, fake):
+    """Signed-in client."""
     return make_client(fake)
+
+
+@pytest.fixture
+def anon(make_client, fake):
+    """Signed-out client."""
+    return make_client(fake, signed_in=False)

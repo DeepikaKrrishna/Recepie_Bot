@@ -43,7 +43,8 @@ def recipe_out(base: dict = LEMON_RICE, **extra) -> dict:
         "total_minutes": base["prep_minutes"] + base["cook_minutes"],
         "possible_allergens": [],
         "notices": [],
-        "uses_expiring": [],
+        "uses_yours": [],
+        "also_needs": [],
         **extra,
     }
 

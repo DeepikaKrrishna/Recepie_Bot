@@ -94,14 +94,14 @@ def test_retries_on_5xx_then_succeeds(make_client):
 
 def test_retries_are_bounded(make_client):
     fake = FakeOpenRouter(default=lambda r: httpx.Response(503))
-    res = make_client(fake, openrouter_max_retries=2).post("/api/recipes/generate", json=REQ)
+    res = make_client(fake, ai_max_retries=2).post("/api/recipes/generate", json=REQ)
     assert res.status_code == 503
     assert len(fake.requests) == 3  # 1 try + 2 retries
 
 
 def test_provider_rate_limit_maps_to_429(make_client):
     fake = FakeOpenRouter(default=lambda r: httpx.Response(429, headers={"retry-after": "1"}))
-    res = make_client(fake, openrouter_max_retries=1).post("/api/recipes/generate", json=REQ)
+    res = make_client(fake, ai_max_retries=1).post("/api/recipes/generate", json=REQ)
     assert res.status_code == 429
     assert res.headers["retry-after"]
 
@@ -110,7 +110,7 @@ def test_timeout_maps_to_504(make_client):
     def boom(request):
         raise httpx.ReadTimeout("slow", request=request)
 
-    res = make_client(FakeOpenRouter(default=boom), openrouter_max_retries=1).post("/api/recipes/generate", json=REQ)
+    res = make_client(FakeOpenRouter(default=boom), ai_max_retries=1).post("/api/recipes/generate", json=REQ)
     assert res.status_code == 504
     assert "too long" in res.json()["detail"]
 
@@ -119,7 +119,7 @@ def test_connection_error_maps_to_503(make_client):
     def boom(request):
         raise httpx.ConnectError("down", request=request)
 
-    res = make_client(FakeOpenRouter(default=boom), openrouter_max_retries=0).post("/api/recipes/generate", json=REQ)
+    res = make_client(FakeOpenRouter(default=boom), ai_max_retries=0).post("/api/recipes/generate", json=REQ)
     assert res.status_code == 503
 
 
@@ -139,7 +139,7 @@ def test_unavailable_model_falls_back(make_client):
         return httpx.Response(200, json=completion(recipes_json(LEMON_RICE), model=body["model"]))
 
     fake = FakeOpenRouter(default=handler)
-    client = make_client(fake, openrouter_model="primary/model", openrouter_fallback_models=["backup/model"])
+    client = make_client(fake, ai_model="primary/model", ai_fallback_models=["backup/model"])
     res = client.post("/api/recipes/generate", json=REQ)
     assert res.status_code == 200
     assert res.json()["model"] == "backup/model"
@@ -153,13 +153,13 @@ def test_response_format_rejection_retries_without_it(make_client):
         return httpx.Response(200, json=completion(recipes_json(LEMON_RICE)))
 
     fake = FakeOpenRouter(default=handler)
-    res = make_client(fake, openrouter_max_retries=0).post("/api/recipes/generate", json=REQ)
+    res = make_client(fake, ai_max_retries=0).post("/api/recipes/generate", json=REQ)
     assert res.status_code == 200
     assert len(fake.requests) == 2
 
 
 def test_missing_api_key_returns_503(make_client):
-    client = make_client(openrouter_api_key="")
+    client = make_client(ai_api_key="")
     res = client.post("/api/recipes/generate", json=REQ)
     assert res.status_code == 503
     assert client.get("/api/options").json()["ai_available"] is False

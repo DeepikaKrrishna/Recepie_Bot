@@ -1,8 +1,7 @@
-"""Saved recipes, favourites, notes, cook tracking and opt-in public share links."""
+"""Cookbook: saved recipes, favourites, notes and cook tracking."""
 
 from __future__ import annotations
 
-import secrets
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -13,7 +12,6 @@ from sqlalchemy.orm import Session
 from ..auth import AuthContext, require_auth, require_csrf
 from ..db import get_db
 from ..models import SavedRecipe, User, utcnow
-from ..recipes import DISCLAIMER
 from ..schemas import RecipeOut
 
 router = APIRouter(prefix="/api", tags=["cookbook"])
@@ -38,6 +36,7 @@ def summary(r: SavedRecipe) -> dict:
     return {
         "id": r.id,
         "title": r.title,
+        "hero_emoji": d.get("hero_emoji", ""),
         "description": d.get("description", ""),
         "cuisine": d.get("cuisine", ""),
         "diet_tags": d.get("diet_tags", []),
@@ -47,7 +46,6 @@ def summary(r: SavedRecipe) -> dict:
         "ingredients": d.get("ingredients", []),
         "favorite": r.favorite,
         "cooked_count": r.cooked_count,
-        "shared": r.share_id is not None,
         "created_at": r.created_at.isoformat(),
     }
 
@@ -57,7 +55,6 @@ def full(r: SavedRecipe) -> dict:
         **summary(r),
         "recipe": r.data,
         "notes": r.notes,
-        "share_id": r.share_id,
         "last_cooked_at": r.last_cooked_at.isoformat() if r.last_cooked_at else None,
     }
 
@@ -140,50 +137,3 @@ def mark_cooked(recipe_id: int, ctx: AuthContext = Depends(require_csrf), db: Se
     user.cooked_count += 1
     db.commit()
     return full(r)
-
-
-@router.post("/recipes/{recipe_id}/share")
-def share_recipe(recipe_id: int, ctx: AuthContext = Depends(require_csrf), db: Session = Depends(get_db)):
-    r = owned(db, ctx.user.id, recipe_id)
-    if r.share_id is None:
-        r.share_id = secrets.token_urlsafe(12)
-        db.commit()
-    return {"share_id": r.share_id, "path": f"/r/{r.share_id}"}
-
-
-@router.delete("/recipes/{recipe_id}/share", status_code=204)
-def unshare_recipe(recipe_id: int, response: Response, ctx: AuthContext = Depends(require_csrf), db: Session = Depends(get_db)):
-    r = owned(db, ctx.user.id, recipe_id)
-    r.share_id = None
-    db.commit()
-    response.status_code = 204
-    return response
-
-
-# ---- public share links ----------------------------------------------------------------
-
-
-def _shared(db: Session, share_id: str) -> SavedRecipe:
-    if not (8 <= len(share_id) <= 32) or not share_id.replace("-", "").replace("_", "").isalnum():
-        raise HTTPException(404, "This shared recipe doesn't exist or is no longer shared.")
-    r = db.scalar(select(SavedRecipe).where(SavedRecipe.share_id == share_id))
-    if r is None:
-        raise HTTPException(404, "This shared recipe doesn't exist or is no longer shared.")
-    return r
-
-
-@router.get("/shared/{share_id}")
-def get_shared(share_id: str, response: Response, db: Session = Depends(get_db)):
-    r = _shared(db, share_id)
-    response.headers["Cache-Control"] = "public, max-age=60"
-    response.headers["X-Robots-Tag"] = "noindex"
-    # Only the recipe itself: no owner, notes or stats.
-    return {"title": r.title, "recipe": r.data, "disclaimer": DISCLAIMER}
-
-
-@router.post("/shared/{share_id}/save", status_code=201)
-def save_shared(share_id: str, ctx: AuthContext = Depends(require_csrf), db: Session = Depends(get_db)):
-    src = _shared(db, share_id)
-    if src.user_id == ctx.user.id:
-        return full(src)
-    return save_recipe(SaveIn(recipe=src.data), ctx, db)

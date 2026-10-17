@@ -22,16 +22,8 @@ def test_migrations_match_models():
         tables = set(inspect(conn).get_table_names())
     engine.dispose()
     assert diff == []
-    assert {
-        "users",
-        "sessions",
-        "preferences",
-        "saved_recipes",
-        "pantry_items",
-        "meal_plan_entries",
-        "shopping_items",
-        "generation_history",
-    } <= tables
+    assert {"users", "sessions", "saved_recipes"} <= tables
+    assert not {"pantry_items", "meal_plan_entries", "shopping_items", "generation_history", "preferences"} & tables
 
 
 def test_normalize_database_url():

@@ -115,11 +115,8 @@ class GenerateRequest(StrictModel):
     max_total_minutes: int | None = Field(default=None, ge=5, le=600)
     difficulty: Difficulty | None = None
     servings: int = Field(default=2, ge=1, le=20)
-    budget: float | None = Field(default=None, gt=0, le=1_000_000)
-    currency: Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")] | None = None
     count: int = Field(default=3, ge=1, le=4)
     remix: RemixRequest | None = None
-    use_first: list[IngredientName] = Field(default_factory=list, max_length=15)
     occasion: str | None = None
     spice: Literal["mild", "medium", "hot"] | None = None
 
@@ -133,7 +130,7 @@ class GenerateRequest(StrictModel):
             raise ValueError("Unsupported occasion")
         return match
 
-    @field_validator("ingredients", "exclude", "use_first")
+    @field_validator("ingredients", "exclude")
     @classmethod
     def _clean_list(cls, items: list[str]) -> list[str]:
         seen: dict[str, str] = {}
@@ -163,7 +160,7 @@ class GenerateRequest(StrictModel):
         return validate_diets(values)
 
     def has_subject(self) -> bool:
-        return bool(self.ingredients or self.dish or self.remix or self.use_first)
+        return bool(self.ingredients or self.dish or self.remix)
 
 
 class SubstituteRequest(StrictModel):
@@ -176,10 +173,6 @@ class SubstituteRequest(StrictModel):
     @classmethod
     def _known_diets(cls, values: list[str]) -> list[str]:
         return validate_diets(values)
-
-
-class AskRequest(StrictModel):
-    question: Annotated[str, StringConstraints(min_length=2, max_length=500)]
 
 
 # ---- AI output (validated) ----------------------------------------------------
@@ -204,12 +197,6 @@ class Nutrition(BaseModel):
     fat_g: float | None = Field(default=None, ge=0, le=500)
 
 
-class CostEstimate(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    amount: float = Field(ge=0, le=10_000_000)
-    currency: Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")]
-
-
 class Recipe(BaseModel):
     model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
     title: Annotated[str, StringConstraints(min_length=2, max_length=120)]
@@ -223,7 +210,7 @@ class Recipe(BaseModel):
     ingredients: list[Ingredient] = Field(min_length=1, max_length=40)
     steps: list[Annotated[str, StringConstraints(min_length=3, max_length=600)]] = Field(min_length=1, max_length=40)
     allergens: list[Annotated[str, StringConstraints(max_length=40)]] = Field(default_factory=list, max_length=15)
-    estimated_cost: CostEstimate | None = None
+    hero_emoji: Annotated[str, StringConstraints(max_length=8)] = ""
     nutrition_per_serving: Nutrition | None = None
     tips: list[Annotated[str, StringConstraints(max_length=300)]] = Field(default_factory=list, max_length=5)
 
@@ -257,7 +244,8 @@ class RecipeOut(Recipe):
     total_minutes: int = Field(ge=0, le=4320)
     possible_allergens: list[Annotated[str, StringConstraints(max_length=40)]] = Field(default_factory=list, max_length=20)
     notices: list[Annotated[str, StringConstraints(max_length=300)]] = Field(default_factory=list, max_length=10)
-    uses_expiring: list[Annotated[str, StringConstraints(max_length=60)]] = Field(default_factory=list, max_length=15)
+    uses_yours: list[Annotated[str, StringConstraints(max_length=60)]] = Field(default_factory=list, max_length=30)
+    also_needs: list[Annotated[str, StringConstraints(max_length=80)]] = Field(default_factory=list, max_length=40)
 
 
 class GenerateResponse(BaseModel):
@@ -272,8 +260,3 @@ class SubstituteResponse(BaseModel):
     substitutes: list[Substitute]
     model: str
     disclaimer: str
-
-
-class AskResponse(BaseModel):
-    answer: str
-    model: str | None = None

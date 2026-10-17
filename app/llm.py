@@ -1,4 +1,4 @@
-"""OpenRouter chat-completions client.
+"""OpenAI-compatible chat-completions client (Groq by default; Gemini and OpenRouter also work).
 
 - API key stays server-side and is never logged.
 - Bounded retries with exponential backoff for timeouts, 429 and 5xx.
@@ -15,7 +15,6 @@ import json
 import logging
 import random
 import re
-from collections.abc import AsyncIterator
 from dataclasses import dataclass
 
 import httpx
@@ -76,7 +75,7 @@ _MODEL_UNAVAILABLE = {404}
 MAX_CONTENT_CHARS = 60_000
 
 
-class OpenRouterClient:
+class ChatClient:
     def __init__(self, settings: Settings, transport: httpx.AsyncBaseTransport | None = None):
         self.settings = settings
         self._transport = transport
@@ -87,8 +86,8 @@ class OpenRouterClient:
         if self._client is None:
             s = self.settings
             self._client = httpx.AsyncClient(
-                base_url=s.openrouter_base_url,
-                timeout=httpx.Timeout(s.openrouter_timeout_seconds, connect=10.0),
+                base_url=s.ai_base_url,
+                timeout=httpx.Timeout(s.ai_timeout_seconds, connect=10.0),
                 transport=self._transport,
                 headers={
                     "HTTP-Referer": s.app_public_url,
@@ -106,7 +105,7 @@ class OpenRouterClient:
     def _auth(self) -> dict[str, str]:
         if not self.settings.llm_configured:
             raise LLMNotConfigured()
-        return {"Authorization": f"Bearer {self.settings.openrouter_api_key}"}
+        return {"Authorization": f"Bearer {self.settings.ai_api_key}"}
 
     # -- non-streaming ----------------------------------------------------------
     async def complete(
@@ -137,7 +136,7 @@ class OpenRouterClient:
         raise last_error
 
     async def _post_with_retries(self, model: str, payload: dict, headers: dict) -> Completion:
-        retries = self.settings.openrouter_max_retries
+        retries = self.settings.ai_max_retries
         attempt = -1
         while attempt < retries:
             attempt += 1
@@ -185,7 +184,7 @@ class OpenRouterClient:
         except ValueError:
             raise LLMBadOutput() from None
         if isinstance(body, dict) and body.get("error"):
-            # OpenRouter occasionally returns 200 with an error object.
+            # Some providers occasionally return 200 with an error object.
             raise LLMUnavailable()
         try:
             content = body["choices"][0]["message"]["content"]
@@ -204,37 +203,6 @@ class OpenRouterClient:
             except ValueError:
                 pass
         await asyncio.sleep(delay)
-
-    # -- streaming (legacy /generate endpoint) ---------------------------------
-    async def stream(self, messages: list[dict[str, str]], max_tokens: int = 2000) -> AsyncIterator[str]:
-        headers = self._auth()
-        payload = {"model": self.settings.openrouter_model, "messages": messages, "stream": True, "max_tokens": max_tokens}
-        try:
-            async with self._http().stream("POST", "/chat/completions", json=payload, headers=headers) as res:
-                if res.status_code != 200:
-                    log.warning("provider_status", extra={"status": res.status_code, "stream": True})
-                    if res.status_code == 429:
-                        raise LLMRateLimited()
-                    if res.status_code in (401, 403):
-                        raise LLMNotConfigured()
-                    raise LLMUnavailable()
-                async for line in res.aiter_lines():
-                    if not line.startswith("data: "):
-                        continue
-                    data = line[6:].strip()
-                    if data == "[DONE]":
-                        break
-                    try:
-                        chunk = json.loads(data)
-                        text = chunk.get("choices", [{}])[0].get("delta", {}).get("content") or ""
-                    except (ValueError, AttributeError, IndexError):
-                        continue
-                    if text:
-                        yield text
-        except httpx.TimeoutException:
-            raise LLMTimeout() from None
-        except httpx.HTTPError:
-            raise LLMUnavailable() from None
 
 
 # ---- JSON extraction ---------------------------------------------------------

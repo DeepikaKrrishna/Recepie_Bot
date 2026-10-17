@@ -45,13 +45,9 @@ def test_ingredients_are_cleaned_and_deduplicated(client, fake):
     assert '"available_ingredients": ["Rice", "tomato"]' in content
 
 
-def test_ask_requires_reasonable_length(client):
-    assert client.post("/api/ask", json={"question": "x"}).status_code == 422
-    assert client.post("/api/ask", json={"question": "q" * 501}).status_code == 422
-
-
-def test_suggest_query_length_limited(client):
-    assert client.get("/api/suggest", params={"ingredients": "a" * 501}).status_code == 422
+def test_substitute_validation(client):
+    assert client.post("/api/recipes/substitute", json={"recipe_title": "", "ingredient": "x"}).status_code == 422
+    assert client.post("/api/recipes/substitute", json={"recipe_title": "x", "ingredient": "y" * 61}).status_code == 422
 
 
 def test_malformed_json_body(client):
@@ -63,19 +59,23 @@ def test_malformed_json_body(client):
 
 
 def test_oversized_body_rejected_by_content_length(client, fake):
-    res = client.post("/api/ask", content=b'{"question": "' + b"a" * 40_000 + b'"}', headers={"content-type": "application/json"})
+    res = client.post(
+        "/api/recipes/substitute",
+        content=b'{"recipe_title": "' + b"a" * 40_000 + b'"}',
+        headers={"content-type": "application/json"},
+    )
     assert res.status_code == 413
     assert fake.requests == []
 
 
 def test_oversized_chunked_body_rejected(client, fake):
     def chunks():
-        yield b'{"question": "'
+        yield b'{"recipe_title": "'
         for _ in range(40):
             yield b"a" * 1000
         yield b'"}'
 
-    res = client.post("/api/ask", content=chunks(), headers={"content-type": "application/json"})
+    res = client.post("/api/recipes/substitute", content=chunks(), headers={"content-type": "application/json"})
     assert res.status_code == 413
     assert fake.requests == []
 
@@ -85,10 +85,10 @@ def test_oversized_chunked_body_rejected(client, fake):
 
 def test_ai_endpoints_are_rate_limited(make_client):
     client = make_client(ai_rate_limit_per_minute=2)
-    body = {"question": "How long to boil an egg?"}
-    assert client.post("/api/ask", json=body).status_code == 200
-    assert client.post("/api/ask", json=body).status_code == 200
-    blocked = client.post("/api/ask", json=body)
+    body = {"recipe_title": "Lemon Rice", "ingredient": "lemon"}
+    assert client.post("/api/recipes/substitute", json=body).status_code == 200
+    assert client.post("/api/recipes/substitute", json=body).status_code == 200
+    blocked = client.post("/api/recipes/substitute", json=body)
     assert blocked.status_code == 429
     assert int(blocked.headers["retry-after"]) >= 1
     # the limit is shared across AI endpoints
@@ -107,19 +107,30 @@ def test_rate_limiter_window_slides():
     assert limiter.hit("a", now=61)[0]  # first hit expired
 
 
-def test_forwarded_for_ignored_unless_trusted(make_client):
+def _second_user(client, email="second@example.com"):
+    from fastapi.testclient import TestClient
+
+    other = TestClient(client.app)
+    res = other.post("/api/auth/signup", json={"email": email, "password": "correct-horse-battery"})
+    other.headers["X-CSRF-Token"] = res.json()["csrf_token"]
+    return other
+
+
+def test_new_accounts_cannot_bypass_the_per_ip_limit(make_client):
     client = make_client(ai_rate_limit_per_minute=1)
-    body = {"question": "How long to boil an egg?"}
-    assert client.post("/api/ask", json=body, headers={"x-forwarded-for": "1.1.1.1"}).status_code == 200
-    # spoofing a different IP must not bypass the limit when TRUST_PROXY is off
-    assert client.post("/api/ask", json=body, headers={"x-forwarded-for": "2.2.2.2"}).status_code == 429
+    body = {"recipe_title": "Lemon Rice", "ingredient": "lemon"}
+    assert client.post("/api/recipes/substitute", json=body, headers={"x-forwarded-for": "1.1.1.1"}).status_code == 200
+    # a second account from the same IP (spoofed X-Forwarded-For ignored when TRUST_PROXY is off)
+    other = _second_user(client)
+    assert other.post("/api/recipes/substitute", json=body, headers={"x-forwarded-for": "2.2.2.2"}).status_code == 429
 
 
 def test_forwarded_for_used_when_trusted(make_client):
     client = make_client(ai_rate_limit_per_minute=1, trust_proxy=True)
-    body = {"question": "How long to boil an egg?"}
-    assert client.post("/api/ask", json=body, headers={"x-forwarded-for": "1.1.1.1"}).status_code == 200
-    assert client.post("/api/ask", json=body, headers={"x-forwarded-for": "2.2.2.2"}).status_code == 200
+    body = {"recipe_title": "Lemon Rice", "ingredient": "lemon"}
+    assert client.post("/api/recipes/substitute", json=body, headers={"x-forwarded-for": "1.1.1.1"}).status_code == 200
+    other = _second_user(client)
+    assert other.post("/api/recipes/substitute", json=body, headers={"x-forwarded-for": "2.2.2.2"}).status_code == 200
 
 
 # ---- headers / CORS ------------------------------------------------------------------------
@@ -143,13 +154,17 @@ def test_hsts_and_docs_in_production(make_client):
 
 
 def test_cors_closed_by_default(client):
-    res = client.options("/api/ask", headers={"Origin": "https://evil.example", "Access-Control-Request-Method": "POST"})
+    res = client.options(
+        "/api/recipes/generate", headers={"Origin": "https://evil.example", "Access-Control-Request-Method": "POST"}
+    )
     assert "access-control-allow-origin" not in res.headers
 
 
 def test_cors_allows_configured_origin_without_credentials(make_client):
     client = make_client(allowed_origins=["https://app.example"])
-    res = client.options("/api/ask", headers={"Origin": "https://app.example", "Access-Control-Request-Method": "POST"})
+    res = client.options(
+        "/api/recipes/generate", headers={"Origin": "https://app.example", "Access-Control-Request-Method": "POST"}
+    )
     assert res.headers["access-control-allow-origin"] == "https://app.example"
     assert "access-control-allow-credentials" not in res.headers
 
@@ -161,7 +176,7 @@ def test_health_endpoints(client):
     assert client.get("/healthz").json() == {"status": "ok"}
     ready = client.get("/readyz").json()
     assert ready["status"] == "ready"
-    assert ready["checks"] == {"database": True, "recipe_dataset": True, "llm_configured": True}
+    assert ready["checks"] == {"database": True, "llm_configured": True}
     assert "key" not in str(ready).lower()
 
 
@@ -186,13 +201,13 @@ def test_frontend_never_parses_html_strings():
         code = f.read_text()
         for banned in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval(", "new Function"):
             assert banned not in code, f"{banned} found in {f.name}"
-        assert "openrouter" not in code.lower(), f"provider reference in {f.name}"
+        assert "groq.com" not in code.lower() and "openrouter" not in code.lower(), f"provider reference in {f.name}"
 
 
 def test_settings_repr_hides_key():
     from app.config import Settings
 
-    assert "super-secret" not in repr(Settings(openrouter_api_key="super-secret"))
+    assert "super-secret" not in repr(Settings(ai_api_key="super-secret"))
 
 
 def test_no_secrets_committed_in_tree():
